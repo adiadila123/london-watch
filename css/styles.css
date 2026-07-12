@@ -254,6 +254,52 @@ footer {
    v3 additions: filters, badges, admin
    ========================================================== */
 
+/* ---------- Collapsible filter card ---------- */
+.filter-card {
+  padding: 0;
+  overflow: hidden;
+}
+.filter-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  gap: 8px;
+  transition: background 0.18s ease;
+  border-radius: var(--radius);
+}
+.filter-toggle:hover {
+  background: var(--hover-bg, rgba(0,0,0,0.04));
+}
+.filter-chevron {
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+  color: var(--text-secondary);
+}
+.filter-toggle[aria-expanded="false"] .filter-chevron {
+  transform: rotate(180deg);
+}
+.filters-body {
+  overflow: hidden;
+  max-height: 500px;
+  transition: max-height 0.3s ease, opacity 0.25s ease, padding 0.25s ease;
+  opacity: 1;
+  padding: 0 16px 14px;
+}
+.filters-body.collapsed {
+  max-height: 0;
+  opacity: 0;
+  padding: 0 16px;
+}
+
 /* ---------- Category filter chips ---------- */
 .chips {
   display: flex;

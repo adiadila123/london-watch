@@ -94,9 +94,16 @@
 
     <aside class="panel">
       <!-- ============ CATEGORY FILTERS ============ -->
-      <section class="card" aria-labelledby="filter-title">
-        <h2 id="filter-title">Filter by category</h2>
-        <div class="chips" id="filters"></div>
+      <section class="card filter-card" aria-labelledby="filter-title">
+        <button class="filter-toggle" id="filter-toggle" aria-expanded="true" aria-controls="filters-body">
+          <span id="filter-title">Filter by category</span>
+          <svg class="filter-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+        </button>
+        <div class="filters-body" id="filters-body">
+          <div class="chips" id="filters"></div>
+        </div>
       </section>
 
       <!-- ============ REPORT FORM ============ -->

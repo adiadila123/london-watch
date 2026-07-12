@@ -521,3 +521,21 @@ if ("serviceWorker" in navigator) {
 
 buildFilterChips();
 loadReports();
+
+// Collapsible filter panel
+(function() {
+  const toggleBtn = document.getElementById("filter-toggle");
+  const body      = document.getElementById("filters-body");
+  if (!toggleBtn || !body) return;
+
+  toggleBtn.addEventListener("click", () => {
+    const isOpen = toggleBtn.getAttribute("aria-expanded") === "true";
+    if (isOpen) {
+      body.classList.add("collapsed");
+      toggleBtn.setAttribute("aria-expanded", "false");
+    } else {
+      body.classList.remove("collapsed");
+      toggleBtn.setAttribute("aria-expanded", "true");
+    }
+  });
+})();
