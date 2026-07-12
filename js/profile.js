@@ -21,6 +21,9 @@ const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
 const statusContainer = document.getElementById("status-container");
 
+const nicknameGroup = document.getElementById("nickname-group");
+const nicknameInput = document.getElementById("nickname");
+
 // Toggle Sign In vs Sign Up forms
 toggleAuthLink.addEventListener("click", (e) => {
   e.preventDefault();
@@ -31,12 +34,14 @@ toggleAuthLink.addEventListener("click", (e) => {
     authSubtitle.textContent = "Sign up to register as a verified citizen and track your reports.";
     authBtnText.textContent = "Sign Up";
     toggleAuthLink.textContent = "Already have an account? Sign in";
+    if (nicknameGroup) nicknameGroup.style.display = "block";
   } else {
     authState = "signin";
     authTitle.textContent = "Citizen Portal";
     authSubtitle.textContent = "Sign in to track your reports and customize notifications.";
     authBtnText.textContent = "Sign In";
     toggleAuthLink.textContent = "Don't have an account? Sign up";
+    if (nicknameGroup) nicknameGroup.style.display = "none";
   }
 });
 
@@ -85,12 +90,19 @@ authForm.addEventListener("submit", async (e) => {
 
   try {
     if (authState === "signin") {
-      const { error } = await db.auth.signInWithPassword({ email, password });
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      // Save email for topbar chip
+      localStorage.setItem("lcw_email", email);
     } else {
+      const nickname = nicknameInput ? nicknameInput.value.trim() : "";
       const { data, error } = await db.auth.signUp({ email, password });
       if (error) throw error;
       
+      // Save nickname + email for topbar chip
+      localStorage.setItem("lcw_email", email);
+      if (nickname) localStorage.setItem("lcw_nickname", nickname);
+
       // If sign up doesn't auto-confirm
       if (data && data.user && data.session === null) {
         showStatus("Registration successful! Please check your email inbox to confirm your account.", "ok");
@@ -111,6 +123,9 @@ authForm.addEventListener("submit", async (e) => {
 // Sign Out
 document.getElementById("logout-btn").addEventListener("click", async () => {
   await db.auth.signOut();
+  // Clear stored user data
+  localStorage.removeItem("lcw_email");
+  localStorage.removeItem("lcw_nickname");
   window.location.reload();
 });
 
@@ -302,12 +317,33 @@ db.auth.onAuthStateChange((event, session) => {
     // Logged in
     authSection.style.display = "none";
     portalSection.style.display = "block";
-    
-    document.getElementById("user-email-display").textContent = session.user.email;
+
+    // Save email for topbar chip on all pages
+    localStorage.setItem("lcw_email", session.user.email);
+
+    // Show nickname in profile sidebar
+    const savedNickname = localStorage.getItem("lcw_nickname");
+    document.getElementById("user-email-display").textContent = savedNickname || session.user.email;
+
+    // Update topbar chip immediately on this page
+    const chip = document.getElementById("topbar-user");
+    const avatarEl = document.getElementById("topbar-avatar");
+    const nicknameEl = document.getElementById("topbar-nickname");
+    if (chip) {
+      const display = savedNickname || session.user.email.split("@")[0];
+      if (avatarEl) avatarEl.textContent = display.charAt(0).toUpperCase();
+      if (nicknameEl) nicknameEl.textContent = display;
+      chip.style.display = "flex";
+    }
+
     renderReportsHistory();
   } else {
     // Guest
     authSection.style.display = "block";
     portalSection.style.display = "none";
+
+    // Hide chip
+    const chip = document.getElementById("topbar-user");
+    if (chip) chip.style.display = "none";
   }
 });

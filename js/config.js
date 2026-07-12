@@ -66,4 +66,31 @@ const CONFIG = {
   } else {
     bindToggle();
   }
+
+  // ---------- TOPBAR USER CHIP ----------
+  function updateTopbarUser() {
+    const chip = document.getElementById("topbar-user");
+    const avatarEl = document.getElementById("topbar-avatar");
+    const nicknameEl = document.getElementById("topbar-nickname");
+    if (!chip) return;
+
+    const nickname = localStorage.getItem("lcw_nickname");
+    const email = localStorage.getItem("lcw_email");
+
+    if (nickname || email) {
+      const display = nickname || email.split("@")[0];
+      const initial = display.charAt(0).toUpperCase();
+      if (avatarEl) avatarEl.textContent = initial;
+      if (nicknameEl) nicknameEl.textContent = display;
+      chip.style.display = "flex";
+    } else {
+      chip.style.display = "none";
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", updateTopbarUser);
+  } else {
+    updateTopbarUser();
+  }
 })();

@@ -1307,3 +1307,50 @@ body.dark-theme .leaflet-control-layers-expanded label {
     opacity: 1;
   }
 }
+
+/* ---------- Topbar User Chip ---------- */
+.topbar-user-chip {
+  display: flex;
+  align-items: center;
+}
+.topbar-user-inner {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  text-decoration: none;
+  transition: all 0.22s ease;
+  max-width: 160px;
+}
+.topbar-user-inner:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(220, 36, 31, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.topbar-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+.topbar-nickname {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}

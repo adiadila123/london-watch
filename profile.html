@@ -43,6 +43,13 @@
           <path d="M8 17a4 4 0 0 1 8 0"></path>
         </svg>
       </a>
+      <!-- User chip (visible when logged in) -->
+      <div id="topbar-user" class="topbar-user-chip" style="display:none;" title="My Profile">
+        <a href="profile.html" class="topbar-user-inner">
+          <span id="topbar-avatar" class="topbar-avatar">?</span>
+          <span id="topbar-nickname" class="topbar-nickname">Citizen</span>
+        </a>
+      </div>
       <button id="theme-toggle" class="theme-toggle-btn" title="Toggle Theme" aria-label="Toggle Theme">
         <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="5"></circle>
@@ -90,6 +97,18 @@
                 <polyline points="22,6 12,13 2,6"></polyline>
               </svg>
               <input type="email" id="email" placeholder="you@example.com" required>
+            </div>
+          </div>
+
+          <!-- Nickname field (only shown on sign-up) -->
+          <div class="input-group" id="nickname-group" style="display:none;">
+            <label for="nickname">Nickname <span style="font-weight:400; color: var(--text-secondary); font-size:0.78rem;">(how others will see you)</span></label>
+            <div class="input-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <input type="text" id="nickname" placeholder="e.g. LondonWatcher42" maxlength="30" autocomplete="nickname">
             </div>
           </div>
 
