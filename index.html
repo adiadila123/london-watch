@@ -4,13 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Community map for reporting local issues across London: potholes, fly-tipping, broken street lights and more.">
+  <meta name="theme-color" content="#DC241F">
   <title>London Community Watch - Report &amp; Map</title>
 
-  <!-- Simple roundel favicon, no image file needed -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='11' fill='none' stroke='%23DC241F' stroke-width='6'/><rect x='2' y='13' width='28' height='6' fill='%230066CC'/></svg>">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon-192.png">
 
-  <!-- Leaflet (free, no API key) -->
+  <!-- Leaflet + marker clustering (free, no API key) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
 
   <!-- App styles -->
   <link rel="stylesheet" href="css/styles.css">
@@ -26,6 +31,12 @@
     <div id="map" aria-label="Map of reported issues in London"></div>
 
     <aside class="panel">
+      <!-- ============ CATEGORY FILTERS ============ -->
+      <section class="card" aria-labelledby="filter-title">
+        <h2 id="filter-title">Filter by category</h2>
+        <div class="chips" id="filters"></div>
+      </section>
+
       <!-- ============ REPORT FORM ============ -->
       <section class="card" aria-labelledby="form-title">
         <h2 id="form-title">Report an issue</h2>
@@ -70,8 +81,9 @@
     Built by citizens, for citizens. Not affiliated with TfL or the Greater London Authority.
   </footer>
 
-  <!-- Libraries -->
+  <!-- Libraries (order matters: Leaflet before markercluster) -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 
   <!-- App code: config first, then the app -->

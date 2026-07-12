@@ -1,12 +1,14 @@
 /* ==========================================================
-   London Community Watch - application logic
+   London Community Watch - application logic (v3)
    Sections:
-     1. Setup (Supabase client, map, draft pin, locate control)
-     2. State + helpers
-     3. Popup builder
-     4. Rendering (markers + feed)
-     5. Data (initial load + realtime)
-     6. Form submission (photo upload + insert)
+     1. Setup (Supabase, map, clustering, draft pin, locate)
+     2. State + helpers (incl. timeAgo, image compression)
+     3. Category filters
+     4. Popup builder
+     5. Rendering (markers + feed)
+     6. Data (initial load + realtime, incl. DELETE)
+     7. Form submission
+     8. PWA service worker registration
    ========================================================== */
 
 "use strict";
@@ -24,6 +26,15 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
+// All report markers live in a cluster group: nearby dots merge into
+// numbered bubbles, which keeps the map readable and fast at scale.
+const clusterGroup = L.markerClusterGroup({
+  maxClusterRadius: 50,
+  showCoverageOnHover: false,
+  spiderfyOnMaxZoom: true
+});
+map.addLayer(clusterGroup);
+
 // Draggable red pin marking WHERE the new report is.
 let draftMarker = null;
 
@@ -36,7 +47,6 @@ function placeDraftMarker(latlng) {
   }
 }
 
-// Click anywhere on the map to (re)place the pin.
 map.on("click", (e) => placeDraftMarker(e.latlng));
 
 function locateUser() {
@@ -44,7 +54,6 @@ function locateUser() {
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       const here = [pos.coords.latitude, pos.coords.longitude];
-      // Only use the GPS fix if it is actually in London.
       if (bounds.contains(here)) {
         map.setView(here, 16);
         placeDraftMarker(here);
@@ -57,8 +66,6 @@ function locateUser() {
   );
 }
 
-// Small "locate me" button under the zoom controls, so users who
-// refused GPS at first can trigger it again later.
 const LocateControl = L.Control.extend({
   options: { position: "topleft" },
   onAdd() {
@@ -76,16 +83,16 @@ const LocateControl = L.Control.extend({
 });
 map.addControl(new LocateControl());
 
-// Ask for GPS once on load.
 locateUser();
 
 /* ---------- 2. STATE + HELPERS ---------- */
 
-// id -> { data, marker }  keeps everything in sync (map, feed, realtime)
+// id -> { data, marker }
 const reports = new Map();
 
-// Remember which reports THIS browser already confirmed (soft limit -
-// there is no login, so this only prevents accidental double-taps).
+// Categories currently visible (all on by default).
+const activeCategories = new Set(Object.keys(CONFIG.CATEGORY_COLORS));
+
 const confirmed = new Set(JSON.parse(localStorage.getItem("confirmed") || "[]"));
 
 function rememberConfirmed(id) {
@@ -93,7 +100,6 @@ function rememberConfirmed(id) {
   localStorage.setItem("confirmed", JSON.stringify([...confirmed]));
 }
 
-// Never inject user text as raw HTML.
 function escapeHtml(str) {
   const d = document.createElement("div");
   d.textContent = str ?? "";
@@ -116,7 +122,86 @@ function dotIcon(category) {
   });
 }
 
-/* ---------- 3. POPUP (rebuilt on every open so counts stay current) ---------- */
+// "2h ago" style relative time.
+function timeAgo(iso) {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  const mo = Math.floor(d / 30);
+  if (mo < 12) return `${mo}mo ago`;
+  return `${Math.floor(mo / 12)}y ago`;
+}
+
+// Status -> CSS badge class ("in progress" -> "in-progress")
+function badgeHtml(status) {
+  const st = status || "reported";
+  return `<span class="badge ${st.replace(" ", "-")}">${escapeHtml(st)}</span>`;
+}
+
+// Shrink photos client-side before upload: max 1280px on the long
+// edge, JPEG q0.8. A 5 MB phone photo becomes ~200-400 KB. If the
+// browser cannot decode the format (e.g. HEIC on Chrome), we fall
+// back to uploading the original file untouched.
+async function compressImage(file) {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.8));
+    if (blob && blob.size < file.size) {
+      return new File([blob], "photo.jpg", { type: "image/jpeg" });
+    }
+    return file;
+  } catch {
+    return file;
+  }
+}
+
+/* ---------- 3. CATEGORY FILTERS ---------- */
+
+function buildFilterChips() {
+  const wrap = document.getElementById("filters");
+  wrap.innerHTML = "";
+  for (const [cat, color] of Object.entries(CONFIG.CATEGORY_COLORS)) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    chip.setAttribute("aria-pressed", "true");
+    chip.innerHTML = `<span class="swatch" style="background:${color}"></span>${escapeHtml(cat)}`;
+    chip.addEventListener("click", () => {
+      if (activeCategories.has(cat)) {
+        activeCategories.delete(cat);
+        chip.classList.add("off");
+        chip.setAttribute("aria-pressed", "false");
+      } else {
+        activeCategories.add(cat);
+        chip.classList.remove("off");
+        chip.setAttribute("aria-pressed", "true");
+      }
+      applyFilters();
+    });
+    wrap.appendChild(chip);
+  }
+}
+
+// Rebuild the cluster layer with only the active categories.
+function applyFilters() {
+  clusterGroup.clearLayers();
+  for (const { data, marker } of reports.values()) {
+    if (activeCategories.has(data.category)) clusterGroup.addLayer(marker);
+  }
+  renderFeed();
+}
+
+/* ---------- 4. POPUP (rebuilt on every open so counts stay current) ---------- */
 
 function popupContent(id) {
   const r = reports.get(id)?.data;
@@ -124,7 +209,8 @@ function popupContent(id) {
 
   const wrap = document.createElement("div");
   wrap.innerHTML =
-    `<div class="popup-cat">${escapeHtml(r.category)}</div>` +
+    `<div class="popup-cat">${escapeHtml(r.category)} ${badgeHtml(r.status)}</div>` +
+    `<div class="popup-meta">${timeAgo(r.created_at)}</div>` +
     (r.photo_url ? `<img class="popup-photo" src="${escapeHtml(r.photo_url)}" alt="Report photo" loading="lazy">` : "") +
     `<div class="popup-desc">${escapeHtml(r.description)}</div>`;
 
@@ -144,7 +230,7 @@ function popupContent(id) {
       btn.textContent = "Error - try again";
       return;
     }
-    r.confirmations = data;          // instant local update
+    r.confirmations = data;
     rememberConfirmed(id);
     btn.textContent = `Confirmed \u2713 (${data})`;
     renderFeed();
@@ -154,52 +240,63 @@ function popupContent(id) {
   return wrap;
 }
 
-/* ---------- 4. RENDERING ---------- */
+/* ---------- 5. RENDERING ---------- */
 
 function addReportToMap(r) {
   if (reports.has(r.id)) return;
-  const marker = L.marker([r.lat, r.lng], { icon: dotIcon(r.category) }).addTo(map);
+  const marker = L.marker([r.lat, r.lng], { icon: dotIcon(r.category) });
   marker.bindPopup(() => popupContent(r.id), { maxWidth: 260 });
   reports.set(r.id, { data: r, marker });
+  if (activeCategories.has(r.category)) clusterGroup.addLayer(marker);
+}
+
+function removeReport(id) {
+  const entry = reports.get(id);
+  if (!entry) return;
+  clusterGroup.removeLayer(entry.marker);
+  reports.delete(id);
+  renderFeed();
 }
 
 function renderFeed() {
   const feed = document.getElementById("feed");
   const latest = [...reports.values()]
+    .filter(({ data }) => activeCategories.has(data.category))
     .sort((a, b) => new Date(b.data.created_at) - new Date(a.data.created_at))
     .slice(0, 10);
 
   if (latest.length === 0) {
-    feed.innerHTML = '<p class="hint">No reports yet - be the first!</p>';
+    feed.innerHTML = '<p class="hint">No reports here yet - be the first!</p>';
     return;
   }
 
   feed.innerHTML = "";
-  for (const { data: r } of latest) {
+  for (const { data: r, marker } of latest) {
     const item = document.createElement("div");
     item.className = "feed-item";
     item.innerHTML =
-      `<div><div class="feed-cat">${escapeHtml(r.category)}</div>` +
-      `<div class="feed-desc">${escapeHtml(r.description.slice(0, 60))}</div></div>` +
+      `<div><div class="feed-cat">${escapeHtml(r.category)} ${badgeHtml(r.status)}</div>` +
+      `<div class="feed-desc">${escapeHtml(r.description.slice(0, 60))}</div>` +
+      `<div class="feed-meta">${timeAgo(r.created_at)}</div></div>` +
       `<span class="feed-count">${r.confirmations} \u2713</span>`;
-    // Tap a feed item -> fly to it and open its popup.
     item.addEventListener("click", () => {
       map.setView([r.lat, r.lng], 17);
-      reports.get(r.id).marker.openPopup();
+      // zoomToShowLayer un-clusters the marker before opening its popup
+      clusterGroup.zoomToShowLayer(marker, () => marker.openPopup());
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
     feed.appendChild(item);
   }
 }
 
-/* ---------- 5. DATA: initial load + realtime ---------- */
+/* ---------- 6. DATA: initial load + realtime ---------- */
 
 async function loadReports() {
   const { data, error } = await db
     .from("reports")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(500);                       // plenty for an MVP
+    .limit(1000);
 
   if (error) {
     document.getElementById("feed").innerHTML =
@@ -220,14 +317,17 @@ db.channel("reports-live")
     const entry = reports.get(payload.new.id);
     if (entry) {
       entry.data = payload.new;
-      // If this report's popup is open, rebuild it with the new count.
       if (entry.marker.isPopupOpen()) entry.marker.setPopupContent(popupContent(payload.new.id));
     }
     renderFeed();
   })
+  .on("postgres_changes", { event: "DELETE", schema: "public", table: "reports" }, (payload) => {
+    // Fired when the admin removes spam - the marker vanishes live.
+    removeReport(payload.old.id);
+  })
   .subscribe();
 
-/* ---------- 6. FORM SUBMISSION ---------- */
+/* ---------- 7. FORM SUBMISSION ---------- */
 
 const photoInput = document.getElementById("photo");
 
@@ -239,7 +339,6 @@ photoInput.addEventListener("change", () => {
 });
 
 async function uploadPhoto(file) {
-  // Unique name so uploads never collide: <uuid>.<extension>
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
   const path = `${crypto.randomUUID()}.${ext}`;
 
@@ -249,22 +348,18 @@ async function uploadPhoto(file) {
   });
   if (error) throw error;
 
-  // The bucket is public, so this URL works without a token.
   return db.storage.from(CONFIG.BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
 document.getElementById("submit-btn").addEventListener("click", async () => {
   const category = document.getElementById("category").value;
   const description = document.getElementById("description").value.trim();
-  const file = photoInput.files[0] || null;
-  const maxBytes = CONFIG.MAX_PHOTO_MB * 1024 * 1024;
+  const rawFile = photoInput.files[0] || null;
 
   // ---- validation ----
   if (!draftMarker)           return setStatus("Tap the map to place the pin first.", "err");
   if (!category)              return setStatus("Please choose a category.", "err");
   if (description.length < 3) return setStatus("Please add a short description.", "err");
-  if (file && file.size > maxBytes)
-    return setStatus(`Photo is over ${CONFIG.MAX_PHOTO_MB} MB - please pick a smaller one.`, "err");
 
   const btn = document.getElementById("submit-btn");
   btn.disabled = true;
@@ -272,7 +367,13 @@ document.getElementById("submit-btn").addEventListener("click", async () => {
 
   try {
     let photo_url = null;
-    if (file) {
+    if (rawFile) {
+      setStatus("Preparing photo\u2026");
+      const file = await compressImage(rawFile);
+      const maxBytes = CONFIG.MAX_PHOTO_MB * 1024 * 1024;
+      if (file.size > maxBytes) {
+        throw new Error(`Photo is over ${CONFIG.MAX_PHOTO_MB} MB even after compression - please pick a smaller one.`);
+      }
       setStatus("Uploading photo\u2026");
       photo_url = await uploadPhoto(file);
     }
@@ -283,12 +384,9 @@ document.getElementById("submit-btn").addEventListener("click", async () => {
     }).select().single();
     if (error) throw error;
 
-    // Draw it immediately (realtime also fires, but addReportToMap
-    // de-duplicates by id, so nothing appears twice).
     addReportToMap(data);
     renderFeed();
 
-    // Reset the form.
     document.getElementById("category").selectedIndex = 0;
     document.getElementById("description").value = "";
     photoInput.value = "";
@@ -302,11 +400,15 @@ document.getElementById("submit-btn").addEventListener("click", async () => {
   }
 });
 
-/* ==========================================================
-   FUTURE FEATURES - where to plug them in:
-   - CSV export: loop over `reports` values and build a data: URI
-   - Category filters: marker.setOpacity() over reports.forEach
-   - Status field (fixed / in progress): SQL column + popup badge
-   ========================================================== */
+/* ---------- 8. PWA ---------- */
 
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(() => {
+    /* SW is progressive enhancement - the app works fine without it */
+  });
+}
+
+/* ---------- init ---------- */
+
+buildFilterChips();
 loadReports();

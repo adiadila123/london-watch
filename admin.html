@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Admin - London Community Watch</title>
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <header>
+    <div class="roundel" aria-hidden="true"></div>
+    <h1>London Community Watch - Admin</h1>
+  </header>
+
+  <!-- ============ LOGIN (shown when signed out) ============ -->
+  <div class="admin-wrap admin-login" id="login-view">
+    <section class="card">
+      <h2>Sign in</h2>
+      <p class="hint">Admin access only. Reports are managed from here.</p>
+
+      <label for="email">Email</label>
+      <input type="text" id="email" autocomplete="username">
+
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password">
+
+      <button class="btn-primary" id="login-btn">Sign in</button>
+      <p id="login-status" role="status"></p>
+    </section>
+  </div>
+
+  <!-- ============ DASHBOARD (shown when signed in) ============ -->
+  <div class="admin-wrap" id="admin-view" hidden>
+    <div class="admin-bar">
+      <span class="admin-count" id="report-count">Loading…</span>
+      <button class="btn-secondary" id="logout-btn">Sign out</button>
+    </div>
+    <section class="card">
+      <div id="report-list"><p class="hint">Loading reports…</p></div>
+    </section>
+  </div>
+
+  <footer>
+    Built by citizens, for citizens. Not affiliated with TfL or the Greater London Authority.
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="js/config.js" defer></script>
+  <script src="js/admin.js" defer></script>
+</body>
+</html>
