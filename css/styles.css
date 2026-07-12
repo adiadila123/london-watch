@@ -419,7 +419,7 @@ header {
 }
 
 /* ---------- Modern Login Card ---------- */
-.admin-body .login-card {
+.login-card {
   background: var(--card-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -429,7 +429,7 @@ header {
   border-radius: 16px;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
-.admin-body .login-card:hover {
+.login-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 24px 48px var(--shadow-color);
   border-color: rgba(220, 36, 31, 0.3);
@@ -451,7 +451,7 @@ header {
   border: 1px solid rgba(220, 36, 31, 0.2);
   transition: transform 0.5s ease;
 }
-.admin-body .login-card:hover .lock-icon-wrap {
+.login-card:hover .lock-icon-wrap {
   transform: rotateY(360deg);
 }
 .login-header h2 {
@@ -490,8 +490,8 @@ header {
   pointer-events: none;
   transition: color 0.2s ease;
 }
-.admin-body input[type="email"],
-.admin-body input[type="password"] {
+.input-wrapper input[type="email"],
+.input-wrapper input[type="password"] {
   width: 100%;
   padding: 14px 14px 14px 42px;
   font-size: 0.95rem;
@@ -500,18 +500,19 @@ header {
   background: var(--input-bg);
   color: var(--text-primary);
   transition: all 0.2s ease;
+  box-sizing: border-box;
 }
-.admin-body input[type="password"] {
+.input-wrapper input[type="password"] {
   padding-right: 46px; /* space for toggle button */
 }
-.admin-body input:focus-visible {
+.input-wrapper input:focus-visible {
   outline: none;
   border-color: var(--red);
   box-shadow: 0 0 0 3px rgba(220, 36, 31, 0.15);
   background: var(--input-bg);
 }
-.admin-body input:focus-visible + .input-icon,
-.admin-body .input-wrapper:focus-within .input-icon {
+.input-wrapper input:focus-visible + .input-icon,
+.input-wrapper:focus-within .input-icon {
   color: var(--red);
 }
 
