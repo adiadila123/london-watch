@@ -172,10 +172,10 @@
             </div>
 
             <!-- Nickname editor (inline) -->
-            <div id="nickname-editor" style="margin-top: 12px; display: flex; gap: 8px; align-items: center;">
+            <div id="nickname-editor" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
               <input type="text" id="nickname-edit-input" placeholder="Enter nickname…" maxlength="30"
-                style="flex: 1; padding: 8px 12px; font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: var(--radius); background: var(--input-bg); color: var(--text-primary);">
-              <button class="btn-primary" id="save-nickname-btn" style="padding: 8px 14px; font-size: 0.82rem; min-height: auto;">Save</button>
+                style="width: 100%; padding: 10px 12px; font-size: 0.88rem; border: 1px solid var(--border-color); border-radius: var(--radius); background: var(--input-bg); color: var(--text-primary); box-sizing: border-box;">
+              <button class="btn-primary" id="save-nickname-btn" style="width: 100%; padding: 10px 14px; font-size: 0.85rem;">Save Nickname</button>
             </div>
             <p id="nickname-save-status" style="font-size: 0.78rem; margin-top: 6px; min-height: 16px; color: var(--text-secondary);"></p>
 
