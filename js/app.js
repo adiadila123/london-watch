@@ -522,20 +522,26 @@ if ("serviceWorker" in navigator) {
 buildFilterChips();
 loadReports();
 
-// Collapsible filter panel
+// Collapsible panels
 (function() {
-  const toggleBtn = document.getElementById("filter-toggle");
-  const body      = document.getElementById("filters-body");
-  if (!toggleBtn || !body) return;
+  [
+    { btn: "filter-toggle", body: "filters-body" },
+    { btn: "form-toggle",   body: "form-body"    },
+    { btn: "feed-toggle",   body: "feed-body"    },
+  ].forEach(({ btn, body }) => {
+    const toggleBtn = document.getElementById(btn);
+    const bodyEl    = document.getElementById(body);
+    if (!toggleBtn || !bodyEl) return;
 
-  toggleBtn.addEventListener("click", () => {
-    const isOpen = toggleBtn.getAttribute("aria-expanded") === "true";
-    if (isOpen) {
-      body.classList.add("collapsed");
-      toggleBtn.setAttribute("aria-expanded", "false");
-    } else {
-      body.classList.remove("collapsed");
-      toggleBtn.setAttribute("aria-expanded", "true");
-    }
+    toggleBtn.addEventListener("click", () => {
+      const isOpen = toggleBtn.getAttribute("aria-expanded") === "true";
+      if (isOpen) {
+        bodyEl.classList.add("collapsed");
+        toggleBtn.setAttribute("aria-expanded", "false");
+      } else {
+        bodyEl.classList.remove("collapsed");
+        toggleBtn.setAttribute("aria-expanded", "true");
+      }
+    });
   });
 })();

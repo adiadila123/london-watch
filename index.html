@@ -107,41 +107,55 @@
       </section>
 
       <!-- ============ REPORT FORM ============ -->
-      <section class="card" aria-labelledby="form-title">
-        <h2 id="form-title">Report an issue</h2>
-        <p class="hint" id="location-hint">Drag the red pin to the exact spot, or tap the map to place it.</p>
+      <section class="card filter-card" aria-labelledby="form-title">
+        <button class="filter-toggle" id="form-toggle" aria-expanded="true" aria-controls="form-body">
+          <span id="form-title">Report an issue</span>
+          <svg class="filter-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+        </button>
+        <div class="filters-body" id="form-body">
+          <p class="hint" id="location-hint">Drag the red pin to the exact spot, or tap the map to place it.</p>
 
-        <label for="category">Category</label>
-        <select id="category" required>
-          <option value="" disabled selected>Choose a category…</option>
-          <option>Roads &amp; Pavements</option>
-          <option>Fly-tipping &amp; Litter</option>
-          <option>Street Lighting</option>
-          <option>Parks &amp; Green Spaces</option>
-          <option>Public Transport</option>
-          <option>Other</option>
-        </select>
+          <label for="category">Category</label>
+          <select id="category" required>
+            <option value="" disabled selected>Choose a category…</option>
+            <option>Roads &amp; Pavements</option>
+            <option>Fly-tipping &amp; Litter</option>
+            <option>Street Lighting</option>
+            <option>Parks &amp; Green Spaces</option>
+            <option>Public Transport</option>
+            <option>Other</option>
+          </select>
 
-        <label for="description">Short description</label>
-        <textarea id="description" maxlength="500" rows="3"
-                  placeholder="e.g. Deep pothole outside no. 42" required></textarea>
+          <label for="description">Short description</label>
+          <textarea id="description" maxlength="500" rows="3"
+                    placeholder="e.g. Deep pothole outside no. 42" required></textarea>
 
-        <label for="photo">Photo (optional)</label>
-        <div class="file-row">
-          <button type="button" class="btn-secondary" id="photo-btn">Add photo</button>
-          <span id="file-name">No photo selected</span>
+          <label for="photo">Photo (optional)</label>
+          <div class="file-row">
+            <button type="button" class="btn-secondary" id="photo-btn">Add photo</button>
+            <span id="file-name">No photo selected</span>
+          </div>
+          <input type="file" id="photo" accept="image/*">
+
+          <button class="btn-primary" id="submit-btn">Submit report</button>
+          <p id="status" role="status"></p>
         </div>
-        <input type="file" id="photo" accept="image/*">
-
-        <button class="btn-primary" id="submit-btn">Submit report</button>
-        <p id="status" role="status"></p>
       </section>
 
       <!-- ============ LIVE FEED ============ -->
-      <section class="card" aria-labelledby="feed-title">
-        <h2 id="feed-title">Latest reports</h2>
-        <p class="hint">The 10 most recent reports. Tap one to view it on the map.</p>
-        <div id="feed"><p class="hint">Loading…</p></div>
+      <section class="card filter-card" aria-labelledby="feed-title">
+        <button class="filter-toggle" id="feed-toggle" aria-expanded="false" aria-controls="feed-body">
+          <span id="feed-title">Latest reports</span>
+          <svg class="filter-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+        </button>
+        <div class="filters-body collapsed" id="feed-body">
+          <p class="hint">The 10 most recent reports. Tap one to view it on the map.</p>
+          <div id="feed"><p class="hint">Loading…</p></div>
+        </div>
       </section>
     </aside>
   </div>
