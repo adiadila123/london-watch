@@ -493,7 +493,7 @@ header {
 .input-wrapper input[type="email"],
 .input-wrapper input[type="password"] {
   width: 100%;
-  padding: 14px 14px 14px 42px;
+  padding: 14px 14px 14px 46px;
   font-size: 0.95rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
