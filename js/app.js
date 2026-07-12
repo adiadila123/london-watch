@@ -193,12 +193,29 @@ async function compressImage(file) {
 function buildFilterChips() {
   const wrap = document.getElementById("filters");
   wrap.innerHTML = "";
+
+  const ICONS = {
+    "Roads & Pavements":    "🛣️",
+    "Fly-tipping & Litter": "🗑️",
+    "Street Lighting":      "💡",
+    "Parks & Green Spaces": "🌳",
+    "Public Transport":     "🚌",
+    "Other":                "📌"
+  };
+
   for (const [cat, color] of Object.entries(CONFIG.CATEGORY_COLORS)) {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "chip";
     chip.setAttribute("aria-pressed", "true");
-    chip.innerHTML = `<span class="swatch" style="background:${color}"></span>${escapeHtml(cat)}`;
+    chip.style.setProperty("--chip-color", color);
+    const icon = ICONS[cat] || "📌";
+    chip.innerHTML = `
+      <span class="swatch" style="background:${color}"></span>
+      <span class="chip-icon" aria-hidden="true">${icon}</span>
+      <span class="chip-label">${escapeHtml(cat)}</span>
+      <span class="chip-check"></span>
+    `;
     chip.addEventListener("click", () => {
       if (activeCategories.has(cat)) {
         activeCategories.delete(cat);

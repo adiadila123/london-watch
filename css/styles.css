@@ -255,29 +255,100 @@ footer {
    ========================================================== */
 
 /* ---------- Category filter chips ---------- */
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip {
-  display: inline-flex;
-  align-items: center;
+.chips {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
+}
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
   border: 1px solid var(--border-color);
-  border-radius: 999px;
+  border-radius: 10px;
   background: var(--card-bg);
   color: var(--text-primary);
-  padding: 8px 12px;
-  font-size: 0.8rem;
+  padding: 10px 14px;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  min-height: 36px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  letter-spacing: 0.01em;
+}
+.chip::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--chip-color, var(--blue));
+  border-radius: 10px 0 0 10px;
+  transition: width 0.2s ease;
+}
+.chip:hover {
+  border-color: var(--chip-color, var(--blue));
+  background: color-mix(in srgb, var(--chip-color, var(--blue)) 8%, var(--card-bg));
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--chip-color, var(--blue)) 20%, transparent);
+}
+.chip:hover::before {
+  width: 6px;
 }
 .chip .swatch {
-  width: 10px; height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--chip-color, var(--blue)) 25%, transparent);
+  transition: all 0.2s ease;
 }
-.chip.off { opacity: 0.35; }
-.chip.off .swatch { background: var(--text-secondary) !important; }
+.chip .chip-label {
+  flex: 1;
+}
+.chip .chip-check {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  background: transparent;
+}
+.chip[aria-pressed="true"] .chip-check {
+  background: var(--chip-color, var(--blue));
+  border-color: var(--chip-color, var(--blue));
+}
+.chip[aria-pressed="true"] .chip-check::after {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff;
+}
+.chip.off {
+  opacity: 0.45;
+  transform: none;
+}
+.chip.off::before {
+  background: var(--text-secondary);
+}
+.chip.off .swatch {
+  background: var(--text-secondary) !important;
+  box-shadow: none;
+}
+.chip-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
 
 /* ---------- Status badges ---------- */
 .badge {
