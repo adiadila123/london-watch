@@ -27,3 +27,43 @@ const CONFIG = {
     "Other":                "#6C6C6C"
   }
 };
+
+/* ---------- THEME MANAGEMENT ---------- */
+(function() {
+  function applyTheme() {
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const theme = savedTheme || (prefersDark ? "dark" : "light");
+    
+    document.body.classList.remove("light-theme", "dark-theme");
+    document.body.classList.add(theme + "-theme");
+  }
+
+  function bindToggle() {
+    const toggleBtn = document.getElementById("theme-toggle");
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", () => {
+        const isDark = document.body.classList.contains("dark-theme");
+        const newTheme = isDark ? "light" : "dark";
+        
+        document.body.classList.remove("light-theme", "dark-theme");
+        document.body.classList.add(newTheme + "-theme");
+        localStorage.setItem("theme", newTheme);
+      });
+    }
+  }
+
+  // Apply theme immediately if body is ready, otherwise wait for DOMContentLoaded
+  if (document.body) {
+    applyTheme();
+  } else {
+    document.addEventListener("DOMContentLoaded", applyTheme);
+  }
+
+  // Bind toggle listener once DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bindToggle);
+  } else {
+    bindToggle();
+  }
+})();

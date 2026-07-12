@@ -21,10 +21,18 @@ const bounds = L.latLngBounds(CONFIG.LONDON_BOUNDS);
 const map = L.map("map", { maxBounds: bounds, maxBoundsViscosity: 0.8 })
   .setView(CONFIG.LONDON_CENTER, CONFIG.LONDON_ZOOM);
 
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+const streetLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
+});
+
+const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+  maxZoom: 19,
+  attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+});
+
+// Add standard street layer by default
+streetLayer.addTo(map);
 
 // All report markers live in a cluster group: nearby dots merge into
 // numbered bubbles, which keeps the map readable and fast at scale.
@@ -33,7 +41,22 @@ const clusterGroup = L.markerClusterGroup({
   showCoverageOnHover: false,
   spiderfyOnMaxZoom: true
 });
-map.addLayer(clusterGroup);
+clusterGroup.addTo(map);
+
+// Initialize the heatmap overlay layer (Leaflet.heat)
+const heatLayer = L.heatLayer([], { radius: 25, blur: 15, max: 1.0 });
+heatLayer.addTo(map);
+
+// Add layer switcher control (both base layers and overlays)
+const baseMaps = {
+  "Street Map": streetLayer,
+  "Satellite": satelliteLayer
+};
+const overlays = {
+  "Markers (Clusters)": clusterGroup,
+  "Heatmap (Density)": heatLayer
+};
+L.control.layers(baseMaps, overlays, { position: "topright" }).addTo(map);
 
 // Draggable red pin marking WHERE the new report is.
 let draftMarker = null;
@@ -291,6 +314,48 @@ function renderFeed() {
 
 /* ---------- 6. DATA: initial load + realtime ---------- */
 
+function updateHeatmap() {
+  const points = [];
+  for (const { data } of reports.values()) {
+    points.push([data.lat, data.lng, 1.0]);
+  }
+  heatLayer.setLatLngs(points);
+}
+
+function updateTicker() {
+  const tickerText = document.getElementById("ticker-text");
+  if (!tickerText) return;
+
+  const sortedReports = [...reports.values()]
+    .map(entry => entry.data)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 8);
+
+  if (sortedReports.length === 0) {
+    tickerText.innerHTML = `<span class="ticker-item">No recent activity. Submitting reports will pop here live!</span>`;
+    return;
+  }
+
+  const items = sortedReports.map(r => {
+    const age = timeAgo(r.created_at);
+    const desc = r.description ? `"${r.description.slice(0, 40)}${r.description.length > 40 ? '...' : ''}"` : '';
+    
+    let icon = "📢";
+    let statusText = "reported";
+    if (r.status === "resolved") {
+      icon = "✅";
+      statusText = "resolved";
+    } else if (r.status === "in progress") {
+      icon = "🚧";
+      statusText = "in progress";
+    }
+    
+    return `<span class="ticker-item">${icon} <strong>${r.category}</strong> ${statusText} ${age} ${desc ? `- ${desc}` : ''}</span>`;
+  });
+
+  tickerText.innerHTML = items.join(" &nbsp;&bull;&nbsp; ");
+}
+
 async function loadReports() {
   const { data, error } = await db
     .from("reports")
@@ -306,12 +371,28 @@ async function loadReports() {
   }
   data.forEach(addReportToMap);
   renderFeed();
+  updateHeatmap();
+  updateTicker();
+
+  // Handle direct linking to a report
+  const urlParams = new URLSearchParams(window.location.search);
+  const reportId = urlParams.get("report");
+  if (reportId) {
+    const entry = reports.get(reportId);
+    if (entry) {
+      clusterGroup.zoomToShowLayer(entry.marker, () => {
+        entry.marker.openPopup();
+      });
+    }
+  }
 }
 
 db.channel("reports-live")
   .on("postgres_changes", { event: "INSERT", schema: "public", table: "reports" }, (payload) => {
     addReportToMap(payload.new);
     renderFeed();
+    updateHeatmap();
+    updateTicker();
   })
   .on("postgres_changes", { event: "UPDATE", schema: "public", table: "reports" }, (payload) => {
     const entry = reports.get(payload.new.id);
@@ -320,10 +401,14 @@ db.channel("reports-live")
       if (entry.marker.isPopupOpen()) entry.marker.setPopupContent(popupContent(payload.new.id));
     }
     renderFeed();
+    updateHeatmap();
+    updateTicker();
   })
   .on("postgres_changes", { event: "DELETE", schema: "public", table: "reports" }, (payload) => {
     // Fired when the admin removes spam - the marker vanishes live.
     removeReport(payload.old.id);
+    updateHeatmap();
+    updateTicker();
   })
   .subscribe();
 
@@ -384,8 +469,15 @@ document.getElementById("submit-btn").addEventListener("click", async () => {
     }).select().single();
     if (error) throw error;
 
+    // Save report ID to localStorage for profile tracking
+    const myReports = JSON.parse(localStorage.getItem("my_reports") || "[]");
+    myReports.push(data.id);
+    localStorage.setItem("my_reports", JSON.stringify(myReports));
+
     addReportToMap(data);
     renderFeed();
+    updateHeatmap();
+    updateTicker();
 
     document.getElementById("category").selectedIndex = 0;
     document.getElementById("description").value = "";

@@ -8,27 +8,115 @@
   <link rel="icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/styles.css">
 </head>
-<body>
+<body class="admin-body">
 
   <header>
-    <div class="roundel" aria-hidden="true"></div>
-    <h1>London Community Watch - Admin</h1>
+    <a href="index.html" class="header-left header-logo-link">
+      <div class="roundel" aria-hidden="true"></div>
+      <h1>London Community Watch - Admin</h1>
+    </a>
+    <div class="header-right">
+      <a href="index.html" class="home-link" title="View Map" aria-label="View Map">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="home-icon">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      </a>
+      <a href="dashboard.html" class="stats-link" title="Statistics" aria-label="Statistics">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stats-icon">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+      </a>
+      <a href="help.html" class="help-link" title="Help &amp; FAQ" aria-label="Help &amp; FAQ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="help-icon">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </a>
+      <a href="profile.html" class="profile-link" title="Citizen Portal" aria-label="Citizen Portal">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="profile-icon">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </a>
+      <button id="theme-toggle" class="theme-toggle-btn" title="Toggle Theme" aria-label="Toggle Theme">
+        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
   </header>
 
   <!-- ============ LOGIN (shown when signed out) ============ -->
   <div class="admin-wrap admin-login" id="login-view">
-    <section class="card">
-      <h2>Sign in</h2>
-      <p class="hint">Admin access only. Reports are managed from here.</p>
+    <section class="card login-card">
+      <div class="login-header">
+        <div class="lock-icon-wrap">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <h2>Sign in</h2>
+        <p class="hint">Admin access only. Reports are managed from here.</p>
+      </div>
 
-      <label for="email">Email</label>
-      <input type="text" id="email" autocomplete="username">
+      <!-- Styled status banner -->
+      <div id="login-status-card" class="status-card" hidden>
+        <svg class="status-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="login-status-text"></span>
+      </div>
 
-      <label for="password">Password</label>
-      <input type="password" id="password" autocomplete="current-password">
+      <div class="input-group">
+        <label for="email">Email</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+            <polyline points="22,6 12,13 2,6"></polyline>
+          </svg>
+          <input type="email" id="email" autocomplete="username" placeholder="name@example.com" required>
+        </div>
+      </div>
 
-      <button class="btn-primary" id="login-btn">Sign in</button>
-      <p id="login-status" role="status"></p>
+      <div class="input-group">
+        <label for="password">Password</label>
+        <div class="input-wrapper">
+          <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required>
+          <button type="button" id="toggle-password" class="toggle-password-btn" aria-label="Show password">
+            <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="login-btn">
+        <span id="login-btn-text">Sign in</span>
+        <span class="btn-spinner" id="login-spinner" hidden></span>
+      </button>
     </section>
   </div>
 
@@ -41,6 +129,48 @@
     <section class="card">
       <div id="report-list"><p class="hint">Loading reports…</p></div>
     </section>
+
+    <!-- Pagination controls -->
+    <div class="pagination-bar" id="pagination-controls" style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 12px; display: none;">
+      <button class="btn-secondary" id="btn-prev-page" style="padding: 6px 12px; font-size: 0.85rem;">&larr; Prev</button>
+      <span id="page-indicator" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">Page 1 of 1</span>
+      <button class="btn-secondary" id="btn-next-page" style="padding: 6px 12px; font-size: 0.85rem;">Next &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ============ REPORT DETAIL MODAL ============ -->
+  <div id="report-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-category">Report Details</h3>
+        <button id="modal-close" class="modal-close-btn" title="Close Modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="modal-image-container" style="display: none; margin-bottom: 12px;"></div>
+        <div class="modal-field">
+          <label>Description</label>
+          <p id="modal-desc" class="modal-text-value"></p>
+        </div>
+        <div class="modal-meta-grid">
+          <div class="modal-field">
+            <label>Date &amp; Time</label>
+            <p id="modal-date"></p>
+          </div>
+          <div class="modal-field">
+            <label>Confirmations</label>
+            <p id="modal-confirmations"></p>
+          </div>
+          <div class="modal-field">
+            <label>Location Coordinates</label>
+            <p id="modal-coords"></p>
+          </div>
+          <div class="modal-field">
+            <label>Actions</label>
+            <div id="modal-map-link-wrap"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <footer>

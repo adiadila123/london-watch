@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Citizen Portal - London Community Watch user profiles, report tracking and notifications.">
+  <title>Citizen Portal - London Community Watch</title>
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="dashboard-page">
+
+  <header>
+    <a href="index.html" class="header-left header-logo-link">
+      <div class="roundel" aria-hidden="true"></div>
+      <h1>London Community Watch - Citizen Portal</h1>
+    </a>
+    <div class="header-right">
+      <a href="index.html" class="home-link" title="View Map" aria-label="View Map">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="home-icon">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      </a>
+      <a href="dashboard.html" class="stats-link" title="Statistics" aria-label="Statistics">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stats-icon">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+      </a>
+      <a href="help.html" class="help-link" title="Help &amp; FAQ" aria-label="Help &amp; FAQ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="help-icon">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </a>
+      <a href="admin.html" class="admin-link" title="Admin Panel" aria-label="Admin Panel">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-icon">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <circle cx="12" cy="11" r="3"></circle>
+          <path d="M8 17a4 4 0 0 1 8 0"></path>
+        </svg>
+      </a>
+      <button id="theme-toggle" class="theme-toggle-btn" title="Toggle Theme" aria-label="Toggle Theme">
+        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="dashboard-wrap">
+    <!-- ============ STATE 1: GUEST SIGN IN/UP ============ -->
+    <div id="auth-section" class="admin-login">
+      <div class="card login-card citizen-auth-card">
+        <div class="login-header">
+          <div class="lock-icon-wrap citizen-icon-wrap">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <h2 id="auth-title">Citizen Portal</h2>
+          <p class="hint" id="auth-subtitle">Sign in to track your reports and customize notifications.</p>
+        </div>
+
+        <div id="status-container"></div>
+
+        <form id="auth-form" onsubmit="return false;">
+          <div class="input-group">
+            <label for="email">Email Address</label>
+            <div class="input-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              <input type="email" id="email" placeholder="you@example.com" required>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="password">Password</label>
+            <div class="input-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="input-icon">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <input type="password" id="password" placeholder="••••••••" required>
+              <button type="button" class="toggle-password-btn" id="toggle-password" title="Toggle visibility" aria-label="Toggle Password Visibility">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="auth-btn">
+            <span id="btn-text">Sign In</span>
+          </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px;">
+          <a href="#" id="toggle-auth-state" style="font-size: 0.88rem; color: var(--blue); text-decoration: none; font-weight: 600;">Don't have an account? Sign up</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STATE 2: LOGGED IN PORTAL ============ -->
+    <div id="portal-section" class="profile-dashboard" style="display: none;">
+      <div class="profile-layout">
+        
+        <!-- Sidebar: user info & settings -->
+        <div class="profile-sidebar">
+          <div class="card profile-info-card">
+            <h2>Your Profile</h2>
+            <div class="profile-avatar-row">
+              <div class="profile-avatar">C</div>
+              <div class="profile-meta-text">
+                <strong id="user-email-display">citizen@example.com</strong>
+                <span class="badge resolved">Verified Citizen</span>
+              </div>
+            </div>
+            <hr class="profile-divider">
+            <div class="profile-details-list">
+              <div class="profile-detail-row">
+                <span class="detail-label">Status:</span>
+                <span class="detail-value">Active</span>
+              </div>
+              <div class="profile-detail-row">
+                <span class="detail-label">Reports Filed:</span>
+                <span class="detail-value" id="user-reports-count">0</span>
+              </div>
+            </div>
+            <button class="btn-secondary" id="logout-btn" style="width: 100%; margin-top: 20px; border-color: var(--border-color); color: var(--text-primary);">Log Out</button>
+          </div>
+
+          <div class="card settings-card">
+            <h2>Notifications</h2>
+            <p class="hint">Configure how you receive updates on report status changes.</p>
+            <label class="switch-label">
+              <input type="checkbox" id="email-notif-toggle">
+              <span class="switch-text">Receive emails on status update</span>
+            </label>
+            <div class="faq-alert alert-info" style="margin-top: 12px; font-size: 0.8rem; padding: 10px;">
+              <strong>Note:</strong> Emails are sent automatically to your verified citizen address.
+            </div>
+          </div>
+        </div>
+
+        <!-- Main panel: report history -->
+        <div class="profile-main">
+          <div class="card history-card" style="min-height: 400px;">
+            <h2>Submitted Reports</h2>
+            <p class="hint">Live history of issues you have reported and their resolution status.</p>
+            
+            <div class="history-list-wrapper">
+              <div id="reports-history-list">
+                <p class="hint" style="text-align: center; margin-top: 40px;">Checking your report history...</p>
+              </div>
+            </div>
+
+            <!-- Profile Pagination controls -->
+            <div class="pagination-bar" id="profile-pagination" style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 12px; display: none;">
+              <button class="btn-secondary" id="btn-prev-profile" style="padding: 6px 12px; font-size: 0.85rem;">&larr; Prev</button>
+              <span id="profile-page-indicator" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">Page 1 of 1</span>
+              <button class="btn-secondary" id="btn-next-profile" style="padding: 6px 12px; font-size: 0.85rem;">Next &rarr;</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Built by citizens, for citizens. Not affiliated with TfL or the Greater London Authority.
+  </footer>
+
+  <!-- CDNs & Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/profile.js"></script>
+</body>
+</html>
