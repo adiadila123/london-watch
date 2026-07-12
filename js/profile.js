@@ -242,7 +242,7 @@ async function renderReportsHistory() {
   if (myReports.length === 0) {
     listContainer.innerHTML = `
       <div class="faq-alert alert-info" style="text-align: center; padding: 24px;">
-        Până acum nu ați depus nicio sesizare. Găsiți o problemă pe teren, raportați-o pe hartă, iar istoricul ei va apărea automat aici!
+        You have not submitted any reports yet. Find an issue near you, report it on the map, and your history will appear here automatically!
       </div>
     `;
     if (pagination) pagination.style.display = "none";
@@ -319,13 +319,13 @@ function displayProfileReportsPage() {
           </div>
           <p class="pr-desc">${desc}</p>
           <div class="pr-meta">
-            <span>Trimis: ${age}</span>
+            <span>Submitted: ${age}</span>
             <span>&bull;</span>
-            <span>Confirmări: ${r.confirmations || 0}</span>
+            <span>Confirmations: ${r.confirmations || 0}</span>
           </div>
         </div>
         <div class="pr-right">
-          <a href="index.html?report=${r.id}" class="btn-secondary pr-map-btn" title="Vezi pe hartă">Vezi pe hartă</a>
+          <a href="index.html?report=${r.id}" class="btn-secondary pr-map-btn" title="View on map">View on Map</a>
         </div>
       </div>
     `;

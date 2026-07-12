@@ -6,8 +6,8 @@
    ========================================================== */
 
 const CONFIG = {
-  SUPABASE_URL: "https://udcvgnbmrlqllyebzoyq.supabase.co",   // TODO: Înlocuiește aici (Settings > API > Project URL)
-  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkY3ZnbmJtcmxxbGx5ZWJ6b3lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NTYwMDUsImV4cCI6MjA5OTQzMjAwNX0.bDH915ncOEIaCByQiBwqStV41fAqF356IgFd_pKrur8",                 // TODO: Înlocuiește aici (Settings > API > anon public key)
+  SUPABASE_URL: "https://udcvgnbmrlqllyebzoyq.supabase.co",   // Settings > API > Project URL
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkY3ZnbmJtcmxxbGx5ZWJ6b3lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NTYwMDUsImV4cCI6MjA5OTQzMjAwNX0.bDH915ncOEIaCByQiBwqStV41fAqF356IgFd_pKrur8",                 // Settings > API > anon public key
 
   BUCKET: "report-photos",
   MAX_PHOTO_MB: 5,
@@ -32,8 +32,7 @@ const CONFIG = {
 (function() {
   function applyTheme() {
     const savedTheme = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const theme = savedTheme || (prefersDark ? "dark" : "light");
+    const theme = savedTheme || "light";
     
     document.body.classList.remove("light-theme", "dark-theme");
     document.body.classList.add(theme + "-theme");
