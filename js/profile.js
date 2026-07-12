@@ -149,6 +149,71 @@ function clearStatus() {
   statusContainer.innerHTML = "";
 }
 
+/* ---------- 4. NICKNAME EDITOR ---------- */
+
+function refreshNicknameUI(nickname) {
+  const displayEl = document.getElementById("nickname-display");
+  const avatarEl  = document.getElementById("topbar-avatar");
+  const chipNick  = document.getElementById("topbar-nickname");
+  const sidebarAvatar = document.querySelector(".profile-avatar");
+  const emailDisplay  = document.getElementById("user-email-display");
+
+  if (displayEl) {
+    if (nickname) {
+      displayEl.textContent = nickname;
+      displayEl.style.fontStyle = "normal";
+      displayEl.style.color = "var(--text-primary)";
+    } else {
+      displayEl.textContent = "Not set";
+      displayEl.style.fontStyle = "italic";
+      displayEl.style.color = "var(--text-secondary)";
+    }
+  }
+
+  // Update topbar chip
+  const storedEmail = localStorage.getItem("lcw_email") || "";
+  const display = nickname || storedEmail.split("@")[0] || "?";
+  const initial = display.charAt(0).toUpperCase();
+  if (avatarEl) avatarEl.textContent = initial;
+  if (chipNick) chipNick.textContent = display;
+  if (sidebarAvatar) sidebarAvatar.textContent = initial;
+  if (emailDisplay) emailDisplay.textContent = nickname || storedEmail;
+}
+
+(function initNicknameEditor() {
+  const saveBtn     = document.getElementById("save-nickname-btn");
+  const editInput   = document.getElementById("nickname-edit-input");
+  const statusLine  = document.getElementById("nickname-save-status");
+
+  if (!saveBtn || !editInput) return;
+
+  // Pre-fill with existing nickname
+  const saved = localStorage.getItem("lcw_nickname") || "";
+  editInput.value = saved;
+  refreshNicknameUI(saved);
+
+  saveBtn.addEventListener("click", () => {
+    const val = editInput.value.trim();
+    if (!val) {
+      if (statusLine) { statusLine.textContent = "⚠️ Nickname cannot be empty."; statusLine.style.color = "var(--red)"; }
+      return;
+    }
+    localStorage.setItem("lcw_nickname", val);
+    refreshNicknameUI(val);
+    editInput.value = val;
+    if (statusLine) {
+      statusLine.textContent = "✅ Nickname updated!";
+      statusLine.style.color = "var(--green, #16a34a)";
+      setTimeout(() => { statusLine.textContent = ""; }, 3000);
+    }
+  });
+
+  // Allow Enter key to save
+  editInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); saveBtn.click(); }
+  });
+})();
+
 function timeAgo(dateString) {
   const diff = Date.now() - new Date(dateString).getTime();
   const mins = Math.floor(diff / 60000);
@@ -323,18 +388,13 @@ db.auth.onAuthStateChange((event, session) => {
 
     // Show nickname in profile sidebar
     const savedNickname = localStorage.getItem("lcw_nickname");
-    document.getElementById("user-email-display").textContent = savedNickname || session.user.email;
 
-    // Update topbar chip immediately on this page
+    // Refresh all nickname-dependent UI in one call
+    refreshNicknameUI(savedNickname);
+
+    // Update topbar chip visibility
     const chip = document.getElementById("topbar-user");
-    const avatarEl = document.getElementById("topbar-avatar");
-    const nicknameEl = document.getElementById("topbar-nickname");
-    if (chip) {
-      const display = savedNickname || session.user.email.split("@")[0];
-      if (avatarEl) avatarEl.textContent = display.charAt(0).toUpperCase();
-      if (nicknameEl) nicknameEl.textContent = display;
-      chip.style.display = "flex";
-    }
+    if (chip) chip.style.display = "flex";
 
     renderReportsHistory();
   } else {

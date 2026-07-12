@@ -165,7 +165,20 @@
                 <span class="detail-label">Reports Filed:</span>
                 <span class="detail-value" id="user-reports-count">0</span>
               </div>
+              <div class="profile-detail-row" style="align-items: center;">
+                <span class="detail-label">Nickname:</span>
+                <span class="detail-value" id="nickname-display" style="font-style: italic; color: var(--text-secondary);">Not set</span>
+              </div>
             </div>
+
+            <!-- Nickname editor (inline) -->
+            <div id="nickname-editor" style="margin-top: 12px; display: flex; gap: 8px; align-items: center;">
+              <input type="text" id="nickname-edit-input" placeholder="Enter nickname…" maxlength="30"
+                style="flex: 1; padding: 8px 12px; font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: var(--radius); background: var(--input-bg); color: var(--text-primary);">
+              <button class="btn-primary" id="save-nickname-btn" style="padding: 8px 14px; font-size: 0.82rem; min-height: auto;">Save</button>
+            </div>
+            <p id="nickname-save-status" style="font-size: 0.78rem; margin-top: 6px; min-height: 16px; color: var(--text-secondary);"></p>
+
             <button class="btn-secondary" id="logout-btn" style="width: 100%; margin-top: 20px; border-color: var(--border-color); color: var(--text-primary);">Log Out</button>
           </div>
 
