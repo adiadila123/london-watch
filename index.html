@@ -7,46 +7,46 @@
   <meta name="theme-color" content="#DC241F">
   <title>London Community Watch - Report &amp; Map</title>
 
-  <!-- SEO -->
+  <!-- ============ SEO ============ -->
   <link rel="canonical" href="https://londonwatch.netlify.app/">
+
+  <!-- Geo targeting: tells search engines this service is about London, UK -->
   <meta name="geo.region" content="GB-LND">
   <meta name="geo.placename" content="London">
   <meta name="geo.position" content="51.5074;-0.1278">
   <meta name="ICBM" content="51.5074, -0.1278">
 
-  <!-- Open Graph -->
+  <!-- Open Graph (link previews on WhatsApp, Facebook, LinkedIn, etc.) -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://londonwatch.netlify.app/">
   <meta property="og:title" content="London Community Watch - Report &amp; Map">
-  <meta property="og:description" content="Community map for reporting local issues across London: potholes, fly-tipping, broken street lights and more.">
+  <meta property="og:description" content="Report potholes, fly-tipping, broken street lights and other local issues across London. See what your neighbours have reported on a live map.">
   <meta property="og:image" content="https://londonwatch.netlify.app/icons/icon-512.png">
   <meta property="og:locale" content="en_GB">
+  <meta property="og:site_name" content="London Community Watch">
 
-  <!-- Twitter Card -->
+  <!-- Twitter / X card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="London Community Watch - Report &amp; Map">
-  <meta name="twitter:description" content="Community map for reporting local issues across London: potholes, fly-tipping, broken street lights and more.">
+  <meta name="twitter:description" content="Report potholes, fly-tipping, broken street lights and other local issues across London on a live community map.">
   <meta name="twitter:image" content="https://londonwatch.netlify.app/icons/icon-512.png">
 
-  <!-- JSON-LD -->
+  <!-- Structured data: helps Google understand this is a London-focused web app -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "London Community Watch",
     "url": "https://londonwatch.netlify.app/",
-    "description": "Community map for reporting local issues across London: potholes, fly-tipping, broken street lights and more.",
-    "applicationCategory": "CivicApplication",
+    "description": "Community platform for reporting and mapping local issues across London: potholes, fly-tipping, street lighting, parks and public transport problems.",
+    "applicationCategory": "UtilitiesApplication",
     "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" },
     "areaServed": {
       "@type": "City",
       "name": "London",
-      "sameAs": "https://www.wikidata.org/wiki/Q84"
-    },
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "GBP"
+      "geo": { "@type": "GeoCoordinates", "latitude": 51.5074, "longitude": -0.1278 },
+      "address": { "@type": "PostalAddress", "addressLocality": "London", "addressCountry": "GB" }
     }
   }
   </script>
@@ -215,6 +215,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 
   <!-- App code: config first, then the app -->
+  <script src="js/theme.js" defer></script>
   <script src="js/config.js" defer></script>
   <script src="js/app.js" defer></script>
 </body>

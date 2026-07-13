@@ -7,7 +7,7 @@
    Bump the CACHE version whenever you deploy breaking changes.
    ========================================================== */
 
-const CACHE = "lcw-v1";
+const CACHE = "lcw-v2";
 
 const SHELL = [
   "./",
