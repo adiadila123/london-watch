@@ -252,7 +252,8 @@ function popupContent(id) {
     `<div class="popup-cat">${escapeHtml(r.category)} ${badgeHtml(r.status)}</div>` +
     `<div class="popup-meta">${timeAgo(r.created_at)}</div>` +
     (r.photo_url ? `<img class="popup-photo" src="${escapeHtml(r.photo_url)}" alt="Report photo" loading="lazy">` : "") +
-    `<div class="popup-desc">${escapeHtml(r.description)}</div>`;
+    `<div class="popup-desc">${escapeHtml(r.description)}</div>` +
+    `<a class="popup-sv" href="https://www.google.com/maps?layer=c&cbll=${r.lat},${r.lng}" target="_blank" rel="noopener noreferrer">Open Street View ↗</a>`;
 
   const btn = document.createElement("button");
   btn.className = "popup-confirm";
