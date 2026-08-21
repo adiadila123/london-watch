@@ -1,12 +1,12 @@
 /* ==========================================================
    London Community Watch - application logic (v3)
    Sections:
-     1. Setup (Supabase, map, clustering, draft pin, locate)
+     1. Setup (map, clustering, draft pin, locate)
      2. State + helpers (incl. timeAgo, image compression)
      3. Category filters
      4. Popup builder
      5. Rendering (markers + feed)
-     6. Data (initial load + realtime, incl. DELETE)
+     6. Data (initial load + polling, incl. delete detection)
      7. Form submission
      8. PWA service worker registration
    ========================================================== */
@@ -14,8 +14,6 @@
 "use strict";
 
 /* ---------- 1. SETUP ---------- */
-
-const db = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 const bounds = L.latLngBounds(CONFIG.LONDON_BOUNDS);
 const map = L.map("map", { maxBounds: bounds, maxBoundsViscosity: 0.8 })
@@ -127,7 +125,7 @@ function rememberConfirmed(id) {
 }
 
 // Delays fn until `wait` ms after the last call - used so panning/
-// zooming the map doesn't fire a Supabase query on every intermediate frame.
+// zooming the map doesn't fire a fetch on every intermediate frame.
 function debounce(fn, wait) {
   let timer;
   return (...args) => {
@@ -278,21 +276,21 @@ function popupContent(id) {
 
   btn.addEventListener("click", async () => {
     btn.disabled = true;
-    // The server dedupes by IP (see confirm-report Edge Function), so
+    // The server dedupes by IP (see server/app.py confirm_report), so
     // localStorage is only an optimistic UI hint (disables the button
     // instantly) - it is never the source of truth for the count.
-    const { data, error } = await db.functions.invoke("confirm-report", {
-      body: { report_id: id }
-    });
-    if (error || data?.error) {
+    try {
+      const res = await fetch(`/api/reports/${id}/confirm`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not confirm.");
+      r.confirmations = data.confirmations;
+      rememberConfirmed(id);
+      btn.textContent = `Confirmed \u2713 (${data.confirmations})`;
+      renderFeed();
+    } catch {
       btn.disabled = false;
       btn.textContent = "Error - try again";
-      return;
     }
-    r.confirmations = data.confirmations;
-    rememberConfirmed(id);
-    btn.textContent = `Confirmed \u2713 (${data.confirmations})`;
-    renderFeed();
   });
 
   wrap.appendChild(btn);
@@ -392,32 +390,49 @@ function updateTicker() {
   tickerText.innerHTML = items.join(" &nbsp;&bull;&nbsp; ");
 }
 
-// Columns actually used by the popup/feed/heatmap/ticker - avoid "*" so
-// we don't pull anything unused (or anything added later) over the wire.
-const REPORT_COLUMNS = "id, category, description, photo_url, lat, lng, confirmations, created_at, status";
-
 // Fetches only the reports whose pin falls inside the map's current
-// viewport, instead of the whole table. Cheap no-op for markers we
-// already have, since addReportToMap() skips ids already in `reports`.
+// viewport, instead of the whole table, and reconciles the result
+// against what's already on the map:
+//   - new ids are added (addReportToMap already skips ones we have),
+//   - changed rows (status/confirmations) update the existing marker's
+//     data and refresh its popup if open,
+//   - ids that were on the map, inside this same bbox, but didn't come
+//     back are gone server-side (e.g. an admin deleted them) - this is
+//     polling's stand-in for the old DELETE realtime event, and it's
+//     only safe to infer within the bbox we actually just queried.
 async function loadReports() {
   const b = map.getBounds();
-  const { data, error } = await db
-    .from("reports")
-    .select(REPORT_COLUMNS)
-    .gte("lat", b.getSouth())
-    .lte("lat", b.getNorth())
-    .gte("lng", b.getWest())
-    .lte("lng", b.getEast())
-    .order("created_at", { ascending: false })
-    .limit(1000);
-
-  if (error) {
+  const bbox = { south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() };
+  let data;
+  try {
+    const res = await fetch(`/api/reports?bbox=${bbox.south},${bbox.west},${bbox.north},${bbox.east}`);
+    if (!res.ok) throw new Error("Request failed");
+    data = await res.json();
+  } catch (err) {
     document.getElementById("feed").innerHTML =
-      '<p class="hint">Could not load reports. Check your Supabase keys in js/config.js.</p>';
-    console.error(error);
+      '<p class="hint">Could not load reports. Is the Flask server running?</p>';
+    console.error(err);
     return;
   }
-  data.forEach(addReportToMap);
+
+  const seenIds = new Set();
+  for (const r of data) {
+    seenIds.add(r.id);
+    const entry = reports.get(r.id);
+    if (!entry) {
+      addReportToMap(r);
+    } else if (JSON.stringify(entry.data) !== JSON.stringify(r)) {
+      entry.data = r;
+      if (entry.marker.isPopupOpen()) entry.marker.setPopupContent(popupContent(r.id));
+    }
+  }
+
+  for (const [id, entry] of reports) {
+    const inBbox = entry.data.lat >= bbox.south && entry.data.lat <= bbox.north &&
+                   entry.data.lng >= bbox.west && entry.data.lng <= bbox.east;
+    if (inBbox && !seenIds.has(id)) removeReport(id);
+  }
+
   renderFeed();
   updateHeatmap();
   updateTicker();
@@ -432,25 +447,16 @@ async function openLinkedReport() {
 
   let entry = reports.get(reportId);
   if (!entry) {
-    const { data, error } = await db
-      .from("reports")
-      .select(REPORT_COLUMNS)
-      .eq("id", reportId)
-      .maybeSingle();
-
-    if (error) {
-      console.error(error);
-      setStatus("Could not load the linked report.", "err");
-      return;
-    }
-    // maybeSingle() returns null (no error) when the id doesn't match any
-    // row - e.g. the report was deleted, or the link was mistyped.
-    if (!data) {
+    const res = await fetch(`/api/reports/${reportId}`);
+    if (res.status === 404) {
       setStatus("That report link no longer exists.", "err");
       return;
     }
-
-    addReportToMap(data);
+    if (!res.ok) {
+      setStatus("Could not load the linked report.", "err");
+      return;
+    }
+    addReportToMap(await res.json());
     entry = reports.get(reportId);
   }
   clusterGroup.zoomToShowLayer(entry.marker, () => entry.marker.openPopup());
@@ -459,30 +465,12 @@ async function openLinkedReport() {
 // Reload the viewport's reports after panning/zooming settles.
 map.on("moveend", debounce(loadReports, 300));
 
-db.channel("reports-live")
-  .on("postgres_changes", { event: "INSERT", schema: "public", table: "reports" }, (payload) => {
-    addReportToMap(payload.new);
-    renderFeed();
-    updateHeatmap();
-    updateTicker();
-  })
-  .on("postgres_changes", { event: "UPDATE", schema: "public", table: "reports" }, (payload) => {
-    const entry = reports.get(payload.new.id);
-    if (entry) {
-      entry.data = payload.new;
-      if (entry.marker.isPopupOpen()) entry.marker.setPopupContent(popupContent(payload.new.id));
-    }
-    renderFeed();
-    updateHeatmap();
-    updateTicker();
-  })
-  .on("postgres_changes", { event: "DELETE", schema: "public", table: "reports" }, (payload) => {
-    // Fired when the admin removes spam - the marker vanishes live.
-    removeReport(payload.old.id);
-    updateHeatmap();
-    updateTicker();
-  })
-  .subscribe();
+// Realtime replacement: Flask has no push channel, so poll the current
+// viewport instead. Good enough for a civic-reporting app - new,
+// updated and deleted reports show up on other open tabs within
+// POLL_INTERVAL_MS rather than instantly.
+const POLL_INTERVAL_MS = 15000;
+setInterval(loadReports, POLL_INTERVAL_MS);
 
 /* ---------- 7. FORM SUBMISSION ---------- */
 
@@ -494,19 +482,6 @@ photoInput.addEventListener("change", () => {
   document.getElementById("file-name").textContent =
     photoInput.files[0] ? photoInput.files[0].name : "No photo selected";
 });
-
-async function uploadPhoto(file) {
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-  const path = `${crypto.randomUUID()}.${ext}`;
-
-  const { error } = await db.storage.from(CONFIG.BUCKET).upload(path, file, {
-    contentType: file.type || "image/jpeg",
-    upsert: false
-  });
-  if (error) throw error;
-
-  return db.storage.from(CONFIG.BUCKET).getPublicUrl(path).data.publicUrl;
-}
 
 document.getElementById("submit-btn").addEventListener("click", async () => {
   const category = document.getElementById("category").value;
@@ -523,34 +498,32 @@ document.getElementById("submit-btn").addEventListener("click", async () => {
   setStatus("Sending\u2026");
 
   try {
-    let photo_url = null;
+    let photoFile = null;
     if (rawFile) {
       setStatus("Preparing photo\u2026");
-      const file = await compressImage(rawFile);
+      photoFile = await compressImage(rawFile);
       const maxBytes = CONFIG.MAX_PHOTO_MB * 1024 * 1024;
-      if (file.size > maxBytes) {
+      if (photoFile.size > maxBytes) {
         throw new Error(`Photo is over ${CONFIG.MAX_PHOTO_MB} MB even after compression - please pick a smaller one.`);
       }
-      setStatus("Uploading photo\u2026");
-      photo_url = await uploadPhoto(file);
     }
 
     const { lat, lng } = draftMarker.getLatLng();
-    // Reports are no longer inserted with the anon key - submit-report
-    // is the only insert path so it can rate-limit by IP (see
-    // supabase-ratelimit.sql). On success data is the new report row,
-    // same shape as before; on failure (bad payload or rate limit hit)
-    // the function returns { error } with a non-2xx status.
-    const { data, error } = await db.functions.invoke("submit-report", {
-      body: { category, description, photo_url, lat, lng }
-    });
-    if (error || data?.error) {
-      let message = data?.error;
-      if (!message && typeof error?.context?.json === "function") {
-        message = (await error.context.json().catch(() => null))?.error;
-      }
-      throw new Error(message || "Could not submit report.");
-    }
+    // The server rate-limits submissions by hashed IP (see
+    // server/app.py create_report / db.check_rate_limit) and saves the
+    // photo itself, so this is a single request instead of the old
+    // "upload to Storage, then insert row" two-step.
+    const form = new FormData();
+    form.append("category", category);
+    form.append("description", description);
+    form.append("lat", lat);
+    form.append("lng", lng);
+    if (photoFile) form.append("photo", photoFile);
+
+    setStatus(photoFile ? "Uploading report\u2026" : "Sending\u2026");
+    const res = await fetch("/api/reports", { method: "POST", body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Could not submit report.");
 
     // Save report ID to localStorage for profile tracking
     const myReports = JSON.parse(localStorage.getItem("my_reports") || "[]");

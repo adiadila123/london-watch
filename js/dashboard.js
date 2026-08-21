@@ -4,8 +4,6 @@
 
 "use strict";
 
-const db = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
 let trendChart = null;
 let categoryChart = null;
 let statusChart = null;
@@ -249,13 +247,13 @@ function renderCharts(data) {
 /* ---------- 4. REAL-TIME EVENTS & INIT ---------- */
 
 async function loadData() {
-  const { data, error } = await db
-    .from("reports")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error loading dashboard data:", error);
+  let data;
+  try {
+    const res = await fetch("/api/reports");
+    if (!res.ok) throw new Error("Request failed");
+    data = await res.json();
+  } catch (err) {
+    console.error("Error loading dashboard data:", err);
     return;
   }
   updateKpis(data);
@@ -268,12 +266,10 @@ const themeObserver = new MutationObserver(() => {
 });
 themeObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
 
-// Supabase Real-time updates sync
-db.channel("reports-dashboard")
-  .on("postgres_changes", { event: "*", schema: "public", table: "reports" }, () => {
-    loadData(); // Re-fetch and re-render on database changes
-  })
-  .subscribe();
+// Realtime replacement: Flask has no push channel, so just re-fetch and
+// re-render on an interval instead of subscribing to database changes.
+const POLL_INTERVAL_MS = 15000;
+setInterval(loadData, POLL_INTERVAL_MS);
 
 // Initial load
 loadData();

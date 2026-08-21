@@ -1,19 +1,31 @@
-# London Community Watch — deploy in 10 minutes
+# London Community Watch — run locally
 
-## 1. Supabase (backend)
-1. Create a free project at supabase.com.
-2. Open **SQL Editor → New query**, paste the whole of `setup.sql`, press **Run**.
-   This creates the `reports` table, RLS policies, the `increment_confirmations`
-   function, Realtime and the public `report-photos` Storage bucket.
-3. Go to **Settings → API** and copy the **Project URL** and the **anon public** key.
+## 1. Backend (Flask + SQLite)
+```
+pip install -r server/requirements.txt
+cp server/.env.example server/.env
+```
+Open `server/.env` and set `SECRET_KEY` and `VOTER_HASH_SALT` to two different long random
+strings (used to sign the session cookie and to hash visitor IPs for confirmation/rate-limit
+dedup — never store the raw IP).
 
-## 2. Frontend
-1. Open `index.html` and replace the two `// TODO: Înlocuiește aici` values
-   (`SUPABASE_URL`, `SUPABASE_ANON_KEY`).
-2. That's it — no build step, no npm.
+Create the one admin account (used to log into `admin.html`):
+```
+flask --app server/app.py create-admin you@example.com your-password
+```
 
-## 3. Deploy
-- **Netlify:** drag the folder onto app.netlify.com/drop.
-- **Vercel:** `vercel` in the folder, or import from a GitHub repo.
+## 2. Run
+```
+python server/app.py
+```
+Open `http://localhost:5050` — Flask serves both the frontend and the `/api/...` endpoints,
+so there's nothing else to start and no build step.
 
-Photos, geolocation and Realtime all work over HTTPS, which both hosts give you by default. Test locally with `python3 -m http.server` if you like (geolocation also works on `localhost`).
+## 3. Data
+- `server/lcw.db` (SQLite file) and `uploads/` (report photos) are created automatically on
+  first run and are gitignored — they're local data, not part of the source tree.
+- Citizen accounts are created from `profile.html` directly (sign up); the admin account is
+  the one created above via `flask create-admin`.
+
+Deploying this somewhere isn't set up yet — SQLite and `uploads/` need a persistent disk,
+so a static/serverless host won't work as-is. That's a separate step for later.

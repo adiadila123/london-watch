@@ -1,14 +1,13 @@
 /* ==========================================================
    London Community Watch - admin logic
-   Sign in with the Supabase account whose email matches the
-   RLS policies in supabase-upgrade.sql. From here you can:
+   Sign in with the account created via:
+     flask --app server/app.py create-admin <email> <password>
+   From here you can:
      - change a report's status (reported / in progress / resolved)
-     - delete a report (its photo is removed from Storage too)
+     - delete a report (its photo file is removed server-side too)
    ========================================================== */
 
 "use strict";
-
-const db = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 const STATUSES = ["reported", "in progress", "resolved"];
 
@@ -40,8 +39,9 @@ function setLoginStatus(msg, cls) {
 /* ---------- AUTH ---------- */
 
 async function refreshView() {
-  const { data: { session } } = await db.auth.getSession();
-  if (session) {
+  const res = await fetch("/api/admin/me");
+  const { user } = await res.json();
+  if (user) {
     loginView.hidden = true;
     adminView.hidden = false;
     loadReports();
@@ -104,9 +104,14 @@ document.getElementById("login-btn").addEventListener("click", async () => {
   spinner.hidden = false;
 
   try {
-    const { error } = await db.auth.signInWithPassword({ email, password });
-    if (error) {
-      setLoginStatus(error.message, "err");
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    if (!res.ok) {
+      const { error } = await res.json();
+      setLoginStatus(error || "Invalid email or password.", "err");
       // Re-enable fields
       emailInput.disabled = false;
       passwordInput.disabled = false;
@@ -115,7 +120,7 @@ document.getElementById("login-btn").addEventListener("click", async () => {
       spinner.hidden = true;
       return;
     }
-    
+
     // Clear login fields upon successful login
     emailInput.value = "";
     passwordInput.value = "";
@@ -142,7 +147,7 @@ document.getElementById("password").addEventListener("keydown", (e) => {
 });
 
 document.getElementById("logout-btn").addEventListener("click", async () => {
-  await db.auth.signOut();
+  await fetch("/api/admin/logout", { method: "POST" });
   refreshView();
 });
 
@@ -154,13 +159,13 @@ let allReports = [];
 
 async function loadReports() {
   const list = document.getElementById("report-list");
-  const { data, error } = await db
-    .from("reports")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    list.innerHTML = `<p class="hint">Could not load reports: ${escapeHtml(error.message)}</p>`;
+  let data;
+  try {
+    const res = await fetch("/api/reports");
+    if (!res.ok) throw new Error("Request failed");
+    data = await res.json();
+  } catch (err) {
+    list.innerHTML = `<p class="hint">Could not load reports: ${escapeHtml(err.message)}</p>`;
     return;
   }
 
@@ -265,12 +270,15 @@ function buildRow(r) {
   select.addEventListener("click", (e) => e.stopPropagation()); // prevent row modal triggering
   select.addEventListener("change", async (e) => {
     select.disabled = true;
-    const { error } = await db.from("reports")
-      .update({ status: select.value })
-      .eq("id", r.id);
+    const res = await fetch(`/api/reports/${r.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: select.value })
+    });
     select.disabled = false;
-    if (error) {
-      alert("Update failed: " + error.message);
+    if (!res.ok) {
+      const { error } = await res.json();
+      alert("Update failed: " + (error || "unknown error"));
     } else {
       // update status in the local array so details modal has latest status
       const item = allReports.find(item => item.id === r.id);
@@ -287,19 +295,15 @@ function buildRow(r) {
     if (!confirm("Delete this report permanently?")) return;
     del.disabled = true;
 
-    // Remove the photo from Storage first (if any).
-    if (r.photo_url) {
-      const path = r.photo_url.split(`/${CONFIG.BUCKET}/`)[1];
-      if (path) await db.storage.from(CONFIG.BUCKET).remove([path]);
-    }
-
-    const { error } = await db.from("reports").delete().eq("id", r.id);
-    if (error) {
+    // The server removes the photo file (if any) as part of the delete.
+    const res = await fetch(`/api/reports/${r.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const { error } = await res.json();
       del.disabled = false;
-      alert("Delete failed: " + error.message);
+      alert("Delete failed: " + (error || "unknown error"));
       return;
     }
-    
+
     // Remove from local array and re-draw page
     allReports = allReports.filter(item => item.id !== r.id);
     displayCurrentPage();

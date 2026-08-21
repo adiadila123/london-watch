@@ -4,8 +4,6 @@
 
 "use strict";
 
-const db = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
 let authState = "signin"; // "signin" or "signup"
 
 /* ---------- 1. AUTH DOM CONTROL ---------- */
@@ -89,29 +87,21 @@ authForm.addEventListener("submit", async (e) => {
   authBtnText.innerHTML = `<span class="btn-spinner"></span> Processing…`;
 
   try {
-    if (authState === "signin") {
-      const { data, error } = await db.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      // Save email for topbar chip
-      localStorage.setItem("lcw_email", email);
-    } else {
-      const nickname = nicknameInput ? nicknameInput.value.trim() : "";
-      const { data, error } = await db.auth.signUp({ email, password });
-      if (error) throw error;
-      
-      // Save nickname + email for topbar chip
-      localStorage.setItem("lcw_email", email);
-      if (nickname) localStorage.setItem("lcw_nickname", nickname);
-
-      // If sign up doesn't auto-confirm
-      if (data && data.user && data.session === null) {
-        showStatus("Registration successful! Please check your email inbox to confirm your account.", "ok");
-        authForm.reset();
-        btn.disabled = false;
-        authBtnText.textContent = originalText;
-        return;
-      }
+    const endpoint = authState === "signin" ? "/api/auth/login" : "/api/auth/signup";
+    const body = { email, password };
+    if (authState === "signup") {
+      body.nickname = nicknameInput ? nicknameInput.value.trim() : "";
     }
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Authentication failed. Please check credentials.");
+
+    applyLoggedInState(data.email, data.nickname);
   } catch (err) {
     console.error(err);
     showStatus(err.message || "Authentication failed. Please check credentials.", "err");
@@ -122,7 +112,7 @@ authForm.addEventListener("submit", async (e) => {
 
 // Sign Out
 document.getElementById("logout-btn").addEventListener("click", async () => {
-  await db.auth.signOut();
+  await fetch("/api/auth/logout", { method: "POST" });
   // Clear stored user data
   localStorage.removeItem("lcw_email");
   localStorage.removeItem("lcw_nickname");
@@ -249,15 +239,14 @@ async function renderReportsHistory() {
     return;
   }
 
-  // Fetch reports details from Supabase
-  const { data, error } = await db
-    .from("reports")
-    .select("*")
-    .in("id", myReports)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching user reports history:", error);
+  // Fetch reports details
+  let data;
+  try {
+    const res = await fetch(`/api/reports?ids=${myReports.join(",")}`);
+    if (!res.ok) throw new Error("Request failed");
+    data = await res.json();
+  } catch (err) {
+    console.error("Error fetching user reports history:", err);
     listContainer.innerHTML = `<p class="hint text-orange" style="text-align: center;">Nu s-a putut încărca istoricul. Încercați din nou mai târziu.</p>`;
     if (pagination) pagination.style.display = "none";
     return;
@@ -375,35 +364,42 @@ if (notifToggle) {
   });
 }
 
-/* ---------- 5. AUTH STATE LISTENER ---------- */
+/* ---------- 5. AUTH STATE ---------- */
 
-db.auth.onAuthStateChange((event, session) => {
-  if (session && session.user) {
-    // Logged in
-    authSection.style.display = "none";
-    portalSection.style.display = "block";
+function applyLoggedInState(email, nickname) {
+  authSection.style.display = "none";
+  portalSection.style.display = "block";
 
-    // Save email for topbar chip on all pages
-    localStorage.setItem("lcw_email", session.user.email);
+  // Save email (and nickname, on signup) for the topbar chip on all pages
+  localStorage.setItem("lcw_email", email);
+  if (nickname) localStorage.setItem("lcw_nickname", nickname);
 
-    // Show nickname in profile sidebar
-    const savedNickname = localStorage.getItem("lcw_nickname");
+  // Refresh all nickname-dependent UI in one call
+  refreshNicknameUI(localStorage.getItem("lcw_nickname"));
 
-    // Refresh all nickname-dependent UI in one call
-    refreshNicknameUI(savedNickname);
+  // Update topbar chip visibility
+  const chip = document.getElementById("topbar-user");
+  if (chip) chip.style.display = "flex";
 
-    // Update topbar chip visibility
-    const chip = document.getElementById("topbar-user");
-    if (chip) chip.style.display = "flex";
+  renderReportsHistory();
+}
 
-    renderReportsHistory();
+function applyGuestState() {
+  authSection.style.display = "block";
+  portalSection.style.display = "none";
+
+  const chip = document.getElementById("topbar-user");
+  if (chip) chip.style.display = "none";
+}
+
+// Check for an existing session on page load (replaces Supabase's
+// onAuthStateChange initial fire).
+(async function checkSession() {
+  const res = await fetch("/api/auth/me");
+  const { user } = await res.json();
+  if (user) {
+    applyLoggedInState(user.email, user.nickname);
   } else {
-    // Guest
-    authSection.style.display = "block";
-    portalSection.style.display = "none";
-
-    // Hide chip
-    const chip = document.getElementById("topbar-user");
-    if (chip) chip.style.display = "none";
+    applyGuestState();
   }
-});
+})();

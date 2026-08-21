@@ -3,11 +3,11 @@
    Strategy: network-first with cache fallback for the app shell.
    - You always get the newest code when online.
    - The shell still opens from cache when offline.
-   - Supabase and map-tile requests are NEVER cached (live data).
+   - /api/ and map-tile requests are NEVER cached (live data).
    Bump the CACHE version whenever you deploy breaking changes.
    ========================================================== */
 
-const CACHE = "lcw-v7";
+const CACHE = "lcw-v8";
 
 const SHELL = [
   "./",
@@ -37,10 +37,14 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Only handle same-origin GETs (the shell). Everything else -
-  // Supabase API, storage photos, OSM tiles, CDNs - goes straight
-  // to the network so data is always live.
+  // Only handle same-origin GETs (the shell). Everything else - the
+  // /api/ JSON endpoints, OSM tiles, CDNs - goes straight to the
+  // network so data is always live. /api/ is same-origin now that
+  // Flask serves both the frontend and the API, so it needs its own
+  // exclusion (it used to be excluded for free by being cross-origin
+  // Supabase calls).
   if (event.request.method !== "GET" || url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith("/api/")) return;
 
   event.respondWith(
     fetch(event.request)

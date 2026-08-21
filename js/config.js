@@ -1,9 +1,5 @@
 /* London Community Watch - configuration */
 const CONFIG = {
-  SUPABASE_URL: "https://udcvgnbmrlqllyebzoyq.supabase.co",
-  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVkY3ZnbmJtcmxxbGx5ZWJ6b3lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NTYwMDUsImV4cCI6MjA5OTQzMjAwNX0.bDH915ncOEIaCByQiBwqStV41fAqF356IgFd_pKrur8",
-
-  BUCKET: "report-photos",
   MAX_PHOTO_MB: 5,
 
   LONDON_CENTER: [51.5074, -0.1278],

@@ -1,0 +1,7 @@
+/.venv/
+/server/.env
+/server/lcw.db
+/uploads/
+__pycache__/
+*.pyc
+.DS_Store
