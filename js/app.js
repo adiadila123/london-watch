@@ -39,7 +39,10 @@ streetLayer.addTo(map);
 const clusterGroup = L.markerClusterGroup({
   maxClusterRadius: 50,
   showCoverageOnHover: false,
-  spiderfyOnMaxZoom: true
+  spiderfyOnMaxZoom: true,
+  // Add markers in async batches instead of all at once - matters once
+  // the viewport can hold hundreds of markers after panning around.
+  chunkedLoading: true
 });
 clusterGroup.addTo(map);
 
@@ -121,6 +124,16 @@ const confirmed = new Set(JSON.parse(localStorage.getItem("confirmed") || "[]"))
 function rememberConfirmed(id) {
   confirmed.add(id);
   localStorage.setItem("confirmed", JSON.stringify([...confirmed]));
+}
+
+// Delays fn until `wait` ms after the last call - used so panning/
+// zooming the map doesn't fire a Supabase query on every intermediate frame.
+function debounce(fn, wait) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
 }
 
 function escapeHtml(str) {
@@ -265,15 +278,20 @@ function popupContent(id) {
 
   btn.addEventListener("click", async () => {
     btn.disabled = true;
-    const { data, error } = await db.rpc("increment_confirmations", { report_id: id });
-    if (error) {
+    // The server dedupes by IP (see confirm-report Edge Function), so
+    // localStorage is only an optimistic UI hint (disables the button
+    // instantly) - it is never the source of truth for the count.
+    const { data, error } = await db.functions.invoke("confirm-report", {
+      body: { report_id: id }
+    });
+    if (error || data?.error) {
       btn.disabled = false;
       btn.textContent = "Error - try again";
       return;
     }
-    r.confirmations = data;
+    r.confirmations = data.confirmations;
     rememberConfirmed(id);
-    btn.textContent = `Confirmed \u2713 (${data})`;
+    btn.textContent = `Confirmed \u2713 (${data.confirmations})`;
     renderFeed();
   });
 
@@ -374,10 +392,22 @@ function updateTicker() {
   tickerText.innerHTML = items.join(" &nbsp;&bull;&nbsp; ");
 }
 
+// Columns actually used by the popup/feed/heatmap/ticker - avoid "*" so
+// we don't pull anything unused (or anything added later) over the wire.
+const REPORT_COLUMNS = "id, category, description, photo_url, lat, lng, confirmations, created_at, status";
+
+// Fetches only the reports whose pin falls inside the map's current
+// viewport, instead of the whole table. Cheap no-op for markers we
+// already have, since addReportToMap() skips ids already in `reports`.
 async function loadReports() {
+  const b = map.getBounds();
   const { data, error } = await db
     .from("reports")
-    .select("*")
+    .select(REPORT_COLUMNS)
+    .gte("lat", b.getSouth())
+    .lte("lat", b.getNorth())
+    .gte("lng", b.getWest())
+    .lte("lng", b.getEast())
     .order("created_at", { ascending: false })
     .limit(1000);
 
@@ -391,19 +421,43 @@ async function loadReports() {
   renderFeed();
   updateHeatmap();
   updateTicker();
-
-  // Handle direct linking to a report
-  const urlParams = new URLSearchParams(window.location.search);
-  const reportId = urlParams.get("report");
-  if (reportId) {
-    const entry = reports.get(reportId);
-    if (entry) {
-      clusterGroup.zoomToShowLayer(entry.marker, () => {
-        entry.marker.openPopup();
-      });
-    }
-  }
 }
+
+// Handles ?report=<id> deep links. The linked report may sit outside
+// the viewport's bounding box (and therefore never come back from
+// loadReports()), so fall back to fetching it directly by id.
+async function openLinkedReport() {
+  const reportId = new URLSearchParams(window.location.search).get("report");
+  if (!reportId) return;
+
+  let entry = reports.get(reportId);
+  if (!entry) {
+    const { data, error } = await db
+      .from("reports")
+      .select(REPORT_COLUMNS)
+      .eq("id", reportId)
+      .maybeSingle();
+
+    if (error) {
+      console.error(error);
+      setStatus("Could not load the linked report.", "err");
+      return;
+    }
+    // maybeSingle() returns null (no error) when the id doesn't match any
+    // row - e.g. the report was deleted, or the link was mistyped.
+    if (!data) {
+      setStatus("That report link no longer exists.", "err");
+      return;
+    }
+
+    addReportToMap(data);
+    entry = reports.get(reportId);
+  }
+  clusterGroup.zoomToShowLayer(entry.marker, () => entry.marker.openPopup());
+}
+
+// Reload the viewport's reports after panning/zooming settles.
+map.on("moveend", debounce(loadReports, 300));
 
 db.channel("reports-live")
   .on("postgres_changes", { event: "INSERT", schema: "public", table: "reports" }, (payload) => {
@@ -482,10 +536,21 @@ document.getElementById("submit-btn").addEventListener("click", async () => {
     }
 
     const { lat, lng } = draftMarker.getLatLng();
-    const { data, error } = await db.from("reports").insert({
-      category, description, photo_url, lat, lng
-    }).select().single();
-    if (error) throw error;
+    // Reports are no longer inserted with the anon key - submit-report
+    // is the only insert path so it can rate-limit by IP (see
+    // supabase-ratelimit.sql). On success data is the new report row,
+    // same shape as before; on failure (bad payload or rate limit hit)
+    // the function returns { error } with a non-2xx status.
+    const { data, error } = await db.functions.invoke("submit-report", {
+      body: { category, description, photo_url, lat, lng }
+    });
+    if (error || data?.error) {
+      let message = data?.error;
+      if (!message && typeof error?.context?.json === "function") {
+        message = (await error.context.json().catch(() => null))?.error;
+      }
+      throw new Error(message || "Could not submit report.");
+    }
 
     // Save report ID to localStorage for profile tracking
     const myReports = JSON.parse(localStorage.getItem("my_reports") || "[]");
@@ -521,7 +586,7 @@ if ("serviceWorker" in navigator) {
 /* ---------- init ---------- */
 
 buildFilterChips();
-loadReports();
+loadReports().then(openLinkedReport);
 
 // Collapsible panels
 (function() {
