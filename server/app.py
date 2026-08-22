@@ -21,13 +21,17 @@ from flask import Flask, abort, jsonify, request, send_from_directory, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import db
+import seed as seed_module
 
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parent
-UPLOAD_DIR = REPO_ROOT / "uploads"
-UPLOAD_DIR.mkdir(exist_ok=True)
 
 load_dotenv(BASE_DIR / ".env")
+
+# Same DATA_DIR as db.py, so uploads/ and lcw.db live on the same
+# persistent volume in production; defaults to the repo root for local dev.
+UPLOAD_DIR = Path(os.environ.get("DATA_DIR", REPO_ROOT)) / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # static_folder=None disables Flask's default "serve anything under this
 # folder" behaviour - server/ (with .env, lcw.db, schema.sql) sits right
@@ -42,6 +46,10 @@ app.config["MAX_CONTENT_LENGTH"] = 6 * 1024 * 1024  # 6 MB request cap (photos a
 if app.config["SECRET_KEY"] == "dev-secret-change-me":
     print("WARNING: using the default SECRET_KEY - copy server/.env.example to server/.env "
           "and set a real one before anything but local testing.")
+
+# Runs on import (not just under `python server/app.py`) so the schema
+# also gets created when gunicorn imports this module in production.
+db.init_db()
 
 CATEGORIES = {
     "Roads & Pavements",
@@ -367,8 +375,23 @@ def create_admin_command(email, password):
     click.echo(f"Admin account created: {email}")
 
 
-if __name__ == "__main__":
+@app.cli.command("seed-demo")
+@click.option("--count", default=60, show_default=True, help="Number of synthetic reports to create.")
+@click.option("--wipe/--no-wipe", default=True, show_default=True,
+              help="Delete existing reports/confirmations before seeding.")
+def seed_demo_command(count, wipe):
+    """Populate the map with synthetic reports for demo purposes.
+
+    Never touches the users table - admin/citizen accounts survive a reseed.
+    """
     db.init_db()
+    if wipe:
+        seed_module.wipe()
+    seed_module.seed(count)
+    click.echo(f"Seeded {count} synthetic reports" + (" (existing reports wiped)" if wipe else ""))
+
+
+if __name__ == "__main__":
     # 5000 collides with macOS AirPlay Receiver on many Macs, so this
     # uses 5050 instead.
-    app.run(debug=True, port=5050)
+    app.run(debug=True, port=int(os.environ.get("PORT", 5050)))

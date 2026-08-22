@@ -4,6 +4,7 @@ supabase-ratelimit.sql as Postgres SECURITY DEFINER functions.
 """
 
 import hashlib
+import os
 import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -12,8 +13,14 @@ from pathlib import Path
 from werkzeug.security import generate_password_hash
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "lcw.db"
 SCHEMA_PATH = BASE_DIR / "schema.sql"
+
+# DATA_DIR points at a persistent volume in production (e.g. Railway's
+# mount at /data) so lcw.db survives redeploys; defaults to server/ for
+# local dev, matching the previous fixed path.
+DATA_DIR = Path(os.environ.get("DATA_DIR", BASE_DIR))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DATA_DIR / "lcw.db"
 
 
 def get_db():
