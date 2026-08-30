@@ -1,6 +1,7 @@
 /.venv/
 /server/.env
-/server/lcw.db
+/server/lcw.db*
+*.db*
 /uploads/
 __pycache__/
 *.pyc
