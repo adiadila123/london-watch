@@ -1,9 +1,7 @@
 /* ==========================================================
    London Community Watch - theme switcher (shared by all pages)
-   - Applies the saved preference (localStorage "lcw-theme") on load,
-     falling back to the system dark/light setting.
-   - #theme-toggle button toggles body.dark-theme and persists it.
-   - dashboard.js watches body's class, so charts restyle automatically.
+   - Applies dark/light theme to <html> and <body> immediately
+   - Defaults to dark theme or saved user preference
    ========================================================== */
 
 "use strict";
@@ -12,32 +10,55 @@
   const KEY = "lcw-theme";
 
   function apply(theme) {
-    document.body.classList.toggle("dark-theme", theme === "dark");
+    const isDark = theme === "dark";
+    if (document.documentElement) {
+      document.documentElement.classList.toggle("dark-theme", isDark);
+    }
+    if (document.body) {
+      document.body.classList.toggle("dark-theme", isDark);
+    }
   }
 
   function current() {
-    return document.body.classList.contains("dark-theme") ? "dark" : "light";
+    return (document.body && document.body.classList.contains("dark-theme")) ||
+           (document.documentElement && document.documentElement.classList.contains("dark-theme"))
+      ? "dark"
+      : "light";
   }
 
-  // 1. Initial theme: saved preference wins, otherwise follow the OS.
+  // 1. Initial theme check (Immediate execution)
   const saved = localStorage.getItem(KEY);
   if (saved) {
     apply(saved);
   } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
     apply("dark");
+  } else {
+    apply("dark"); // Default dark mode
   }
 
-  // 2. Wire the toggle button (present in the header on every page).
-  const btn = document.getElementById("theme-toggle");
-  if (btn) {
-    btn.addEventListener("click", () => {
-      const next = current() === "dark" ? "light" : "dark";
-      apply(next);
-      localStorage.setItem(KEY, next);
-    });
+  // 2. Wire toggle buttons on DOM load
+  function initToggle() {
+    // Re-apply to body once body is ready
+    const theme = saved || "dark";
+    apply(theme);
+
+    const btn = document.getElementById("theme-toggle");
+    if (btn) {
+      btn.onclick = function () {
+        const next = current() === "dark" ? "light" : "dark";
+        apply(next);
+        localStorage.setItem(KEY, next);
+      };
+    }
   }
 
-  // 3. If the user has no saved preference, follow live OS changes.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initToggle);
+  } else {
+    initToggle();
+  }
+
+  // 3. Live OS scheme listener
   if (!saved && window.matchMedia) {
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
       if (!localStorage.getItem(KEY)) apply(e.matches ? "dark" : "light");

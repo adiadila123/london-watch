@@ -26,6 +26,7 @@
   --footer-bg: #0F172A;
 }
 
+html.dark-theme,
 body.dark-theme {
   --bg-primary: #0B0F19;
   --bg-secondary: #111827;
@@ -39,6 +40,69 @@ body.dark-theme {
   --input-bg: #0F172A;
   --input-text: #FFFFFF;
   --footer-bg: #030712;
+
+  background-color: #0B0F19 !important;
+  color: #FFFFFF !important;
+}
+
+html.dark-theme body,
+body.dark-theme {
+  background-color: #0B0F19 !important;
+}
+
+body.dark-theme .dashboard-page,
+body.dark-theme .dashboard-wrap,
+body.dark-theme main,
+body.dark-theme .admin-body,
+body.dark-theme .profile-body,
+body.dark-theme .help-body,
+body.dark-theme .panel,
+body.dark-theme .layout {
+  background: #0B0F19 !important;
+  color: #FFFFFF !important;
+}
+
+body.dark-theme .card,
+body.dark-theme .chart-card,
+body.dark-theme .kpi-card,
+body.dark-theme .filter-card,
+body.dark-theme .faq-card,
+body.dark-theme .login-card,
+body.dark-theme .accordion-item {
+  background: #1E293B !important;
+  background-color: #1E293B !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-theme header {
+  background: #030712 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-theme footer {
+  background: #030712 !important;
+  color: #94A3B8 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-theme select,
+body.dark-theme input[type="text"],
+body.dark-theme input[type="email"],
+body.dark-theme input[type="password"],
+body.dark-theme textarea {
+  background: #0F172A !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+body.dark-theme h1,
+body.dark-theme h2,
+body.dark-theme h3,
+body.dark-theme h4,
+body.dark-theme .kpi-number {
+  color: #FFFFFF !important;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
