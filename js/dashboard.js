@@ -1,5 +1,6 @@
 /* ==========================================================
    London Community Watch - dashboard analytics
+   High-contrast, responsive data visualizations
    ========================================================== */
 
 "use strict";
@@ -7,6 +8,7 @@
 let trendChart = null;
 let categoryChart = null;
 let statusChart = null;
+let lastDashboardData = null;
 
 /* ---------- 1. DATA LOADING & AGGREGATION ---------- */
 
@@ -33,9 +35,9 @@ function getCategoryData(data) {
     datasets: [{
       label: "Reports",
       data: counts,
-      backgroundColor: colors.map(c => c + "cc"), // 80% opacity
+      backgroundColor: colors.map(c => c + "ee"), // 93% opacity for vibrant punch
       borderColor: colors,
-      borderWidth: 1.5,
+      borderWidth: 2,
       borderRadius: 6
     }]
   };
@@ -44,20 +46,21 @@ function getCategoryData(data) {
 function getStatusData(data) {
   const statuses = ["reported", "in progress", "resolved"];
   const counts = statuses.map(st => data.filter(r => (r.status || "reported") === st).length);
-  const colors = ["#DC241F", "#E08600", "#007D32"];
+  const colors = ["#EF4444", "#F59E0B", "#10B981"]; // Vivid Red, Amber, Emerald
 
   return {
     labels: ["Reported", "In Progress", "Resolved"],
     datasets: [{
       data: counts,
       backgroundColor: colors,
-      borderWidth: 0,
-      hoverOffset: 4
+      borderColor: document.body.classList.contains("dark-theme") ? "#1E293B" : "#FFFFFF",
+      borderWidth: 3,
+      hoverOffset: 6
     }]
   };
 }
 
-function getTrendData(data) {
+function getTrendData(data, isDark) {
   const trend = new Map();
   // Initialize map with last 14 days of 0s
   for (let i = 13; i >= 0; i--) {
@@ -75,18 +78,24 @@ function getTrendData(data) {
     }
   });
 
+  const lineColor = isDark ? "#38BDF8" : "#0284C7";
+  const fillColor = isDark ? "rgba(56, 189, 248, 0.2)" : "rgba(2, 132, 199, 0.15)";
+
   return {
     labels: [...trend.keys()],
     datasets: [{
       label: "New Reports",
       data: [...trend.values()],
-      borderColor: "#0066CC",
-      backgroundColor: "rgba(0, 102, 204, 0.1)",
-      borderWidth: 3,
+      borderColor: lineColor,
+      backgroundColor: fillColor,
+      borderWidth: 3.5,
       fill: true,
       tension: 0.35,
-      pointBackgroundColor: "#0066CC",
-      pointRadius: 4
+      pointBackgroundColor: lineColor,
+      pointBorderColor: isDark ? "#0F172A" : "#FFFFFF",
+      pointBorderWidth: 2,
+      pointRadius: 5,
+      pointHoverRadius: 7
     }]
   };
 }
@@ -96,56 +105,23 @@ function getTrendData(data) {
 function getThemeOptions() {
   const isDark = document.body.classList.contains("dark-theme");
   return {
-    textColor: isDark ? "#c0c0c5" : "#555555",
-    gridColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)",
-    tooltipBg: isDark ? "#1e1e24" : "#ffffff",
-    tooltipColor: isDark ? "#ffffff" : "#000000",
-    tooltipBorder: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"
+    isDark,
+    textColor: isDark ? "#FFFFFF" : "#0F172A",
+    textColorMuted: isDark ? "#E2E8F0" : "#334155",
+    gridColor: isDark ? "rgba(255, 255, 255, 0.14)" : "rgba(15, 23, 42, 0.08)",
+    tooltipBg: isDark ? "#0F172A" : "#FFFFFF",
+    tooltipColor: isDark ? "#FFFFFF" : "#0F172A",
+    tooltipBorder: isDark ? "rgba(255, 255, 255, 0.25)" : "rgba(0, 0, 0, 0.15)"
   };
-}
-
-function updateChartsTheme() {
-  const opts = getThemeOptions();
-  const charts = [trendChart, categoryChart, statusChart];
-  
-  charts.forEach(chart => {
-    if (!chart) return;
-    
-    // Update scales (for trend and category charts)
-    if (chart.options.scales) {
-      if (chart.options.scales.x) {
-        chart.options.scales.x.ticks.color = opts.textColor;
-        chart.options.scales.x.grid.color = opts.gridColor;
-      }
-      if (chart.options.scales.y) {
-        chart.options.scales.y.ticks.color = opts.textColor;
-        chart.options.scales.y.grid.color = opts.gridColor;
-      }
-    }
-    
-    // Update legends
-    if (chart.options.plugins && chart.options.plugins.legend) {
-      chart.options.plugins.legend.labels.color = opts.textColor;
-    }
-    
-    // Update tooltips
-    if (chart.options.plugins && chart.options.plugins.tooltip) {
-      chart.options.plugins.tooltip.backgroundColor = opts.tooltipBg;
-      chart.options.plugins.tooltip.titleColor = opts.tooltipColor;
-      chart.options.plugins.tooltip.bodyColor = opts.tooltipColor;
-      chart.options.plugins.tooltip.borderColor = opts.tooltipBorder;
-    }
-    
-    chart.update("none"); // skip animation on theme switch for snappy feel
-  });
 }
 
 /* ---------- 3. RENDERING CHARTS ---------- */
 
 function renderCharts(data) {
+  if (!data) return;
+  lastDashboardData = data;
   const themeOpts = getThemeOptions();
 
-  // Common chart configuration options
   const commonOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -153,7 +129,7 @@ function renderCharts(data) {
       legend: {
         labels: {
           color: themeOpts.textColor,
-          font: { family: "inherit", weight: "600" }
+          font: { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", weight: "700", size: 13 }
         }
       },
       tooltip: {
@@ -161,15 +137,17 @@ function renderCharts(data) {
         titleColor: themeOpts.tooltipColor,
         bodyColor: themeOpts.tooltipColor,
         borderColor: themeOpts.tooltipBorder,
-        borderWidth: 1,
-        padding: 10,
-        boxPadding: 6
+        borderWidth: 1.5,
+        padding: 12,
+        boxPadding: 8,
+        titleFont: { weight: "700", size: 14 },
+        bodyFont: { weight: "500", size: 13 }
       }
     }
   };
 
   // --- 1. Trend Line Chart ---
-  const trendData = getTrendData(data);
+  const trendData = getTrendData(data, themeOpts.isDark);
   if (trendChart) trendChart.destroy();
   trendChart = new Chart(document.getElementById("trendChart"), {
     type: "line",
@@ -178,15 +156,22 @@ function renderCharts(data) {
       ...commonOptions,
       plugins: {
         ...commonOptions.plugins,
-        legend: { display: false } // trend label is self-explanatory
+        legend: { display: false }
       },
       scales: {
         x: {
-          ticks: { color: themeOpts.textColor, font: { family: "inherit" } },
+          ticks: {
+            color: themeOpts.textColorMuted,
+            font: { family: "inherit", weight: "600", size: 12 }
+          },
           grid: { color: themeOpts.gridColor }
         },
         y: {
-          ticks: { color: themeOpts.textColor, font: { family: "inherit" }, stepSize: 1 },
+          ticks: {
+            color: themeOpts.textColorMuted,
+            font: { family: "inherit", weight: "600", size: 12 },
+            stepSize: 1
+          },
           grid: { color: themeOpts.gridColor },
           beginAtZero: true
         }
@@ -202,20 +187,27 @@ function renderCharts(data) {
     data: catData,
     options: {
       ...commonOptions,
-      indexAxis: "y", // horizontal bar chart
+      indexAxis: "y",
       plugins: {
         ...commonOptions.plugins,
         legend: { display: false }
       },
       scales: {
         x: {
-          ticks: { color: themeOpts.textColor, font: { family: "inherit" }, stepSize: 1 },
+          ticks: {
+            color: themeOpts.textColorMuted,
+            font: { family: "inherit", weight: "600", size: 12 },
+            stepSize: 1
+          },
           grid: { color: themeOpts.gridColor },
           beginAtZero: true
         },
         y: {
-          ticks: { color: themeOpts.textColor, font: { family: "inherit" } },
-          grid: { display: false } // clean horizontal axis
+          ticks: {
+            color: themeOpts.textColor,
+            font: { family: "inherit", weight: "700", size: 13 }
+          },
+          grid: { display: false }
         }
       }
     }
@@ -229,14 +221,19 @@ function renderCharts(data) {
     data: statusData,
     options: {
       ...commonOptions,
-      cutout: "65%",
+      cutout: "62%",
       plugins: {
         ...commonOptions.plugins,
         legend: {
           position: "bottom",
           labels: {
             color: themeOpts.textColor,
-            padding: 16
+            font: { family: "inherit", weight: "700", size: 13 },
+            padding: 18,
+            boxWidth: 16,
+            boxHeight: 16,
+            borderRadius: 4,
+            useBorderRadius: true
           }
         }
       }
@@ -260,14 +257,15 @@ async function loadData() {
   renderCharts(data);
 }
 
-// Observe theme mutations on body to update chart aesthetics dynamically
+// Observe theme mutations on body to re-render charts with high contrast
 const themeObserver = new MutationObserver(() => {
-  updateChartsTheme();
+  if (lastDashboardData) {
+    renderCharts(lastDashboardData);
+  }
 });
 themeObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
 
-// Realtime replacement: Flask has no push channel, so just re-fetch and
-// re-render on an interval instead of subscribing to database changes.
+// Polling interval
 const POLL_INTERVAL_MS = 15000;
 setInterval(loadData, POLL_INTERVAL_MS);
 
