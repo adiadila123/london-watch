@@ -12,6 +12,7 @@ Run locally with:
 """
 
 import os
+import sys
 from functools import wraps
 from pathlib import Path
 
@@ -20,11 +21,13 @@ from dotenv import load_dotenv
 from flask import Flask, abort, jsonify, request, send_from_directory, session
 from werkzeug.security import check_password_hash, generate_password_hash
 
-import db
-import seed as seed_module
-
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+import db
+import seed as seed_module
 
 load_dotenv(BASE_DIR / ".env")
 
@@ -104,9 +107,11 @@ def root():
 
 @app.get("/<page>")
 def page(page):
-    if page not in PUBLIC_PAGES:
-        abort(404)
-    return send_from_directory(REPO_ROOT, page)
+    if page in PUBLIC_PAGES:
+        return send_from_directory(REPO_ROOT, page)
+    if f"{page}.html" in PUBLIC_PAGES:
+        return send_from_directory(REPO_ROOT, f"{page}.html")
+    abort(404)
 
 
 @app.get("/css/<path:filename>")
@@ -415,6 +420,5 @@ def seed_demo_command(count, wipe):
 
 
 if __name__ == "__main__":
-    # 5000 collides with macOS AirPlay Receiver on many Macs, so this
-    # uses 5050 instead.
-    app.run(debug=True, port=int(os.environ.get("PORT", 5050)))
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port, debug=False)
