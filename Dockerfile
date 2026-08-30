@@ -13,6 +13,6 @@ ENV AUTO_SEED_COUNT=60
 ENV ENABLE_LIVE_SIMULATOR=true
 ENV SIMULATOR_INTERVAL_SEC=20
 
-EXPOSE 8080 5050
+EXPOSE 8080 5050 3000 80
 
-CMD ["sh", "-c", "gunicorn --chdir server app:app --bind 0.0.0.0:${PORT:-8080}"]
+CMD ["sh", "-c", "gunicorn --chdir server --workers 1 --threads 4 app:app --bind 0.0.0.0:${PORT:-8080}"]
