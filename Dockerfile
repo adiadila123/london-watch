@@ -16,4 +16,4 @@ ENV PYTHONPATH=/app/server:/app
 
 EXPOSE 8080 5050 80
 
-CMD ["sh", "-c", "gunicorn --chdir /app/server --workers 1 --threads 4 app:app --bind 0.0.0.0:${PORT:-8080}"]
+CMD ["python", "start.py"]
