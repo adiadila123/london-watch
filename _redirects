@@ -1,0 +1,3 @@
+# Netlify Proxy Rewrites to Railway Python Backend
+/api/*      https://london-watch-production.up.railway.app/api/:splat      200
+/uploads/*  https://london-watch-production.up.railway.app/uploads/:splat  200
