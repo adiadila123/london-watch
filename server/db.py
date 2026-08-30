@@ -3,6 +3,8 @@ anti-abuse logic that used to live in supabase-confirmations.sql /
 supabase-ratelimit.sql as Postgres SECURITY DEFINER functions.
 """
 
+from __future__ import annotations
+
 import hashlib
 import os
 import sqlite3

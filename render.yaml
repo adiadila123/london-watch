@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: london-watch
+    runtime: python
+    plan: free
+    buildCommand: pip install -r server/requirements.txt
+    startCommand: gunicorn --chdir server app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: VOTER_HASH_SALT
+        generateValue: true
+      - key: AUTO_SEED
+        value: "true"
+      - key: AUTO_SEED_COUNT
+        value: "60"
+      - key: ENABLE_LIVE_SIMULATOR
+        value: "true"
+      - key: SIMULATOR_INTERVAL_SEC
+        value: "20"
+      - key: PYTHON_VERSION
+        value: "3.11.0"

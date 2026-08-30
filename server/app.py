@@ -51,6 +51,17 @@ if app.config["SECRET_KEY"] == "dev-secret-change-me":
 # also gets created when gunicorn imports this module in production.
 db.init_db()
 
+AUTO_SEED = os.environ.get("AUTO_SEED", "true").lower() in ("true", "1", "yes")
+AUTO_SEED_COUNT = int(os.environ.get("AUTO_SEED_COUNT", 60))
+ENABLE_LIVE_SIMULATOR = os.environ.get("ENABLE_LIVE_SIMULATOR", "true").lower() in ("true", "1", "yes")
+SIMULATOR_INTERVAL_SEC = int(os.environ.get("SIMULATOR_INTERVAL_SEC", 20))
+
+if AUTO_SEED:
+    seed_module.ensure_seeded(AUTO_SEED_COUNT)
+
+if ENABLE_LIVE_SIMULATOR:
+    seed_module.start_live_simulator(SIMULATOR_INTERVAL_SEC)
+
 CATEGORIES = {
     "Roads & Pavements",
     "Fly-tipping & Litter",
@@ -361,6 +372,18 @@ def admin_me():
     row = conn.execute("select email from users where id = ?", (session["admin_id"],)).fetchone()
     conn.close()
     return jsonify(user=dict(row) if row else None)
+
+
+@app.post("/api/admin/seed")
+@admin_required
+def admin_seed():
+    body = request.get_json(silent=True) or {}
+    count = int(body.get("count", 60))
+    wipe = bool(body.get("wipe", True))
+    if wipe:
+        seed_module.wipe()
+    seed_module.seed(count)
+    return jsonify(ok=True, seeded=count, wiped=wipe)
 
 
 # ---------- CLI ----------
