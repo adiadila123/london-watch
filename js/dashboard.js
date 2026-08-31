@@ -247,14 +247,23 @@ async function loadData() {
   let data;
   try {
     const res = await fetch("/api/reports");
-    if (!res.ok) throw new Error("Request failed");
+    if (!res.ok) throw new Error("Local request failed");
     data = await res.json();
   } catch (err) {
-    console.error("Error loading dashboard data:", err);
-    return;
+    try {
+      const resLive = await fetch("https://london-watch-production.up.railway.app/api/reports");
+      if (resLive.ok) {
+        data = await resLive.json();
+      }
+    } catch (e) {
+      console.error("Error loading dashboard data:", err);
+    }
   }
-  updateKpis(data);
-  renderCharts(data);
+
+  if (data && Array.isArray(data)) {
+    updateKpis(data);
+    renderCharts(data);
+  }
 }
 
 // Observe theme mutations on body to re-render charts with high contrast
